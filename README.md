@@ -123,7 +123,7 @@ For example, in an interactive Python session or a script:
 from lgpyred import Red, main
 ```
 
-# Create a Red instance (change parameters as needed)
+#### Create a Red instance (change parameters as needed)
 ```python
 red = Red(imlist_name='*.fit',  # or specify a list file name
           sumfile='file_summary.txt',
@@ -135,7 +135,7 @@ red = Red(imlist_name='*.fit',  # or specify a list file name
 ```
 You can choose specific procedures you want to test or do like above.
 
-# Run specific methods
+#### Run specific methods
 
 ```python
 red.FileSum()
@@ -147,7 +147,7 @@ red.Astrometry()
 red.Dophot()
 ```
 
-# Or run the entire pipeline logic defined in main()
+#### Or run the entire pipeline logic defined in main()
 ```python
 main()
 ```

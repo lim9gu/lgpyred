@@ -63,17 +63,20 @@ This will install lgpyred along with its required dependencies...
 ### 4. Example usage
 Once installed, you can use lgpyred as a command-line tool:
 
+```python
 lgpyred --input image.fits --mode reduce --date 20240625
-
+```
 Alternatively, you can also use it as a Python module:
 
+```python
 from lgpyred.lgpyred import Red
 
 red = Red(ccd='PNUO_C361K')
 main()
+```
 
 ### 5. Supported Platforms
-This pipeline has been tested on Ubuntu Linux.
+This pipeline has been tested on Ubuntu Linux 24 LTS.
 Support for macOS or Windows may require additional adjustments, especially for installing external tools like IRAF or Hotpants.
 
 License

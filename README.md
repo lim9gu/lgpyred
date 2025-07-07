@@ -4,7 +4,10 @@
 
 This pipeline was developed to automate standard procedures in observational astronomy, including astrometric calibration, image alignment, subtraction, and photometry.
 
-developed by Gu Lim
+<br>
+
+Developed by **Gu Lim**  
+Dept. of Earth Sciences, Pusan National University
 
 
 ## Installation Guide

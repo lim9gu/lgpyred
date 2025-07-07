@@ -60,8 +60,7 @@ pip install .
 
 This will install lgpyred along with its required dependencies...
 
-### 4. Example usage
-4. Example Usage
+### 4.1 Example usage (command-line)
 
 Once installed, you can use lgpyred as a command-line tool for various steps in your image reduction pipeline. Below are examples of how to run different steps:
 
@@ -115,6 +114,44 @@ Archive reduced images
 ```bash
 lgpyred --archive --imlist '*.fit'
 ```
+
+### 4.2 Example usage (Python Module)
+You can also use lgpyred directly in Python code instead of the command line.
+For example, in an interactive Python session or a script:
+
+```python
+from lgpyred import Red, main
+```
+
+# Create a Red instance (change parameters as needed)
+```python
+red = Red(imlist_name='*.fit',  # or specify a list file name
+          sumfile='file_summary.txt',
+          ccd='PNUO_C361K',
+          zeroproc=True,
+          darkproc=True,
+          flatproc=True,
+          flattype='skyflat')
+```
+You can choose specific procedures you want to test or do like above.
+
+# Run specific methods
+
+```python
+red.FileSum()
+red.GenBias()
+red.GenDark()
+red.GenFlat()
+red.Apply()
+red.Astrometry()
+red.Dophot()
+```
+
+# Or run the entire pipeline logic defined in main()
+```python
+main()
+```
+
 ### 5. Supported Platforms
 This pipeline has been tested on Ubuntu Linux 24 LTS.
 Support for macOS or Windows may require additional adjustments, especially for installing external tools like IRAF or Hotpants.

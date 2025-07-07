@@ -54,7 +54,9 @@ Clone this repository and install using pip:
 ```bash
 git clone https://github.com/lim9gu/lgpyred.git
 cd lgpyred
-pip install .```
+pip install .'''
+
+This will install lgpyred along with its required dependencies...
 
 ### 4. Example usage
 Once installed, you can use lgpyred as a command-line tool:

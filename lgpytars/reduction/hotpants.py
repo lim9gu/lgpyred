@@ -1,6 +1,8 @@
 import glob, os
 import numpy as np
 from astropy.io import fits, ascii
+import importlib.resources as pkg_resources
+import lgpytars.data
 '''
 def hotpants(sciim, refim, ngflag=False, sigma_match='', conv='t', scale='i', iu=5000000, tu=5000000, il=-10000, tl=-10000, igain=1.33, tgain=1.26, irdnoise=12.6, trdnoise=361., ssf='') :
 	"""
@@ -153,6 +155,9 @@ def runhotpants(imlist_name='Cal*fits', refinst='PS1', scifwhmkey='FWHM', reffwh
     imlist = glob.glob(imlist_name); imlist.sort()
 
     obsspec = ascii.read('/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt')
+    with pkg_resources.path(lgpytars.data, 'obs_spec.txt') as path:
+        obsspec = ascii.read( str(path))    
+    
     refspec = obsspec[np.where(obsspec['obs_ccd'] == refinst)[0]]
 
     # 설정값 결정

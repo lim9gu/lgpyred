@@ -7,7 +7,7 @@
 CATALOG_NAME     test.cat       # name of the output catalog
 CATALOG_TYPE     FITS_1.0       # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
                                 # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
-PARAMETERS_NAME  /home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.param  # name of the file containing catalog contents
+PARAMETERS_NAME  ./lgpytars/astrom.config/astrometry.net.param  # name of the file containing catalog contents
  
 #------------------------------- Extraction ----------------------------------
  
@@ -17,7 +17,7 @@ DETECT_THRESH    2            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 ANALYSIS_THRESH  2            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
  
 FILTER           Y              # apply filter for detection (Y or N)?
-FILTER_NAME      /home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.conv   # name of the file containing the filter
+FILTER_NAME      ./lgpytars/astrom.config/astrometry.net.conv   # name of the file containing the filter
  
 DEBLEND_NTHRESH  32             # Number of deblending sub-thresholds
 DEBLEND_MINCONT  0.01          # Minimum contrast parameter for deblending
@@ -40,14 +40,14 @@ SATUR_KEY        SATURATE       # keyword for saturation level (in ADUs)
  
 MAG_ZEROPOINT    0.0            # magnitude zero-point
 MAG_GAMMA        4.0            # gamma of emulsion (for photographic scans)
-GAIN             1.11            # detector gain in e-/ADU
+GAIN             0.77            # detector gain in e-/ADU
 GAIN_KEY         EGAIN           # keyword for detector gain in e-/ADU
 PIXEL_SCALE      0            # size of pixel in arcsec (0=use FITS WCS info)
  
 #------------------------- Star/Galaxy Separation ----------------------------
  
 SEEING_FWHM      2.5            # stellar FWHM in arcsec
-STARNNW_NAME     /home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.nnw    # Neural-Network_Weight table filename
+STARNNW_NAME    ./lgpytars/astrom.config/astrometry.net.nnw    # Neural-Network_Weight table filename
  
 #------------------------------ Background -----------------------------------
  

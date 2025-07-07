@@ -1,3 +1,7 @@
+from astropy.io import ascii
+import importlib.resources as pkg_resources
+import lgpytars.data  
+
 def wcscenter(inim) :
 	"""
 	Measure image WCS center coordinates.
@@ -28,8 +32,10 @@ def hdrcheck(imlist_name, ccd, fov, racen='', deccen=''):
 	from astropy.time import Time	
 	from astropy.coordinates import SkyCoord
 
-	all_catname = '/data1/code/alltarget.dat'
-	all_cat	 = ascii.read(all_catname) 
+	with pkg_resources.path(lgpytars.data, 'alltarget.dat') as path:
+    all_catname = str(path)
+    allcat = ascii.read(all_catname)
+
 	ra, dec = all_cat['ra'], all_cat['dec']
 	radeg, decdeg = [], []
 	i=0

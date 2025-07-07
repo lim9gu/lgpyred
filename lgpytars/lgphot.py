@@ -16,9 +16,10 @@ from astropy.stats import sigma_clipped_stats, sigma_clip
 from astropy.visualization import (MinMaxInterval, SqrtStretch, ImageNormalize)
 from astropy.visualization import ZScaleInterval, LinearStretch
 
-from imsng import imsngphot
-import imsng.imsngphot as iph 
+import importlib.resources as pkg_resources
+import lgpytars.imsng.imsngphot as iph 
 from lgpytars.reduction.hdrcheck import wcscenter
+import lgpytars.data
 
 from matplotlib import rc
 import matplotlib.pyplot as plt
@@ -130,7 +131,7 @@ def PlotPhotRes(inim, band, ref, mykey, myerrkey, totals, alives, exiles, ZP, zp
     os.system(f'mv {outname} ./fig/')
     plt.close()
 
-def SE(inim, outcat_name, pixscale, path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
+def SE(inim, outcat_name, pixscale, path='./lgpytars/photconf/', gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
     sexconf   = path+'default.sex'
     sexnnw    = path+'default.nnw'
     sexconv   = path+'default.conv'
@@ -222,7 +223,7 @@ def process_catalog(ref, obj, ra, dec, fov, ratio):
     return convquerycat
 
 
-def phot(imlist_name, target_catalog='', band='V', path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=0.9, onlyzp=True, snrcut=0.1, magup=11, maglow=15):
+def phot(imlist_name, target_catalog='', band='V', path='./lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=0.9, onlyzp=True, snrcut=0.1, magup=11, maglow=15):
     """
     MAG_AUTO   : AUTO 
     MAG_APER_0 : 1*FWHM
@@ -240,7 +241,9 @@ def phot(imlist_name, target_catalog='', band='V', path='/home/lim9/miniconda3/l
     """
     start_time = time.time()
     myerrkey   = 'MAGERR_'+mykey
-    obscat     = ascii.read('/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt')
+    
+    with pkg_resources.path(lgpytars.data, 'obs_spec.txt') as path:
+        obscat = ascii.read( str(path))
 
     if savecat :
         f = open("phot.result.txt", 'w+')

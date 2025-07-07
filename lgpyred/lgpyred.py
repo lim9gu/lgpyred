@@ -18,6 +18,11 @@ from astropy.table import Column
 from astropy.io import fits, ascii
 from astropy.coordinates import SkyCoord
 
+from importlib.resources import files
+import importlib.resources as pkg_resources
+
+import lgytars.data
+
 from lgpytars.SameEpoch import SameEpoch
 from lgpytars.imcombine import imcombine_set, imcombine_epoch
 from lgpytars.reduction.hdrcheck import wcscenter
@@ -26,6 +31,21 @@ from lgpytars.lgphot import phot
 from lgpytars.reduction import hotpants
 
 class Red :
+    """
+    Red: A CCD image reduction pipeline for astronomical observations.
+
+    This class performs bias, dark, flat corrections, WCS alignment, image stacking,
+    image subtraction using HOTPANTS, and optional photometry tasks. It supports 
+    multiple observatories and CCD types defined in an instrument specification table.
+
+    It also supports archiving reduced data to user-defined directories, and references
+    external configuration files such as astrometry.net and SExtractor config.
+
+    Note:
+    - IRAF must be installed and accessible.
+    - Astrometry.net and HOTPANTS must be available in the system PATH.
+    - Configuration and reference files (obs_spec.txt, alltarget.dat, sex config) are loaded from lgpytars package.
+    """
     def __init__(self,
                  imlist_name = '*.fit',
                  sumfile     = 'file_summary.txt',
@@ -37,22 +57,60 @@ class Red :
                  sep         = 60.
                  ) :
         """
-        Initialize the Red class with settings and configurations for image reduction.
+        Initialize the Red class for CCD image reduction and analysis.
 
-        Parameters:
-        imlist_name (str): Pattern to match image files.
-        zeroproc (bool): Flag to indicate if zero (bias) processing should be done.
-        darkproc (bool): Flag to indicate if dark processing should be done.
-        flattype (str): Type of flat field ('skyflat' or 'Domeflat').
+        This class is designed to automatically perform CCD image calibration (bias, dark, flat),
+        astrometric solving, image stacking, subtraction, and archiving. Instrument specifications 
+        are loaded based on the specified CCD from packaged data files.
 
-        Raises:
-        ValueError: If the flattype is not 'skyflat' or 'Domeflat'.
+        Parameters
+        ----------
+        imlist_name : str, optional
+            Pattern to match image files to reduce (default: '*.fit').
+
+        sumfile : str, optional
+            Output file to store image summary information (default: 'file_summary.txt').
+
+        ccd : str, optional
+            CCD name used to fetch instrument-specific configuration (default: 'PNUO_C361K').
+
+        zeroproc : bool, optional
+            Whether to apply bias correction (default: True).
+
+        darkproc : bool, optional
+            Whether to apply dark current correction (default: True).
+
+        flatproc : bool, optional
+            Whether to apply flat field correction (default: True).
+
+        flattype : str, optional
+            Type of flat field to use: 'skyflat' or 'Domeflat' (default: 'skyflat').
+
+        sep : float, optional
+            Time interval (in minutes) used for automatic image alignment (default: 60.0).
+
+        archive_paths : dict, optional
+            Custom dictionary to define archive destination directories. If None, default paths are used.
+
+        Notes
+        -----
+        - Instrument parameters are loaded from the packaged `obs_spec.txt` and `ccddb/`.
+        - All necessary configuration and support files (e.g., alltarget.dat, sextractor config) are 
+          accessed via the `lgpytars.data`, `lgpytars.astrom_config`, and `lgpytars.photconf` modules.
+        - If the `ASTROMETRY_CFG` environment variable is set, it overrides the default astrometry config path.
+        - If the HOTPANTS template directory does not exist, subtraction will be skipped.
+        - Archiving is automatically handled based on the `PROGRAM` header, CCD name, and filter band.
+
+        Raises
+        ------
+        ValueError
+            If `flattype` is not one of 'skyflat' or 'Domeflat'.
         """
         # File setting
         self.curdir      = os.getcwd()
 
         iraf.chdir(self.curdir)
-        self.irafdb = '/home/lim9/iraf-2.17/noao/imred/ccdred/ccddb/'
+        self.irafdb = str(files(lgpytars.data).joinpath("ccddb"))
         self.imlist_name = imlist_name
         if '-' in list(self.curdir.split('/')[-1]) :
             yy   = self.curdir.split('/')[-1].split('-')[0]
@@ -64,7 +122,8 @@ class Red :
 
         # Detector setting
         self.ccd         = ccd
-        obscat           = ascii.read("/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt")
+        #obscat           = ascii.read("/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt")
+        obscat           = ascii.read(str(files(lgpytars.data).joinpath('obs_spec.txt')))
         inst             = obscat[obscat['obs_ccd'] == self.ccd]
 
         self.temp2replace = -5. # If no CCD-TEMP, replace this temp.
@@ -77,7 +136,6 @@ class Red :
         self.fov         = inst['fov_a'][0]
         self.savedir     = inst['savedir'][0]
         self.sumfile     = sumfile
-        #self.calfile     = 'calib_summary.txt'
 
         # Reduction setting
         self.zeroproc    = True
@@ -96,15 +154,21 @@ class Red :
         self.flat_archive   = f'{self.savedir}masterflat_*/'
 
         # Astrometry setting (Astrometry.net)
-        self.config    = '/home/lim9/miniconda3/etc/astrometry.cfg'
+        #self.config    = '/home/lim9/miniconda3/etc/astrometry.cfg'
+        self.config    = os.environ.get('ASTROMETRY_CFG', '/etc/astrometry.cfg')
+
         self.scalelow  = self.pixscale * 0.9 #0.18  # lower limit for the pixel scale covering 'No binning' to '2x2 binning')
         self.scalehigh = self.pixscale * 2 * 1.1 #0.46  # upper limit for the pixel scale covering 'No binning' to '2x2 binning')
         self.radec     = False # if True, astronometry.net search for wcs using radec in fits image header 
-        self.sexconfig = f'/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.{self.ccd}.sex'
+        #self.sexconfig = f'/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.{self.ccd}.sex'
+
+        self.sexconfig = str(files('lgpytars.astrom_config').joinpath(f'astrometry.net.{self.ccd}.sex'))
+
         self.radius    = 0.7 # degree of querying radius of stars in index files
 
         # Header check
-        self.alltarget = "/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/alltarget.dat"
+        #self.alltarget = "/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/alltarget.dat"
+        self.alltarget = str(files('lgpytars.data').joinpath('alltarget.dat'))
 
         # Image alignment setting (wcsremap)
         self.sep         = sep   # mins time interval
@@ -113,8 +177,24 @@ class Red :
         # Image stacking setting (IRAF.imcombine)
         self.reject = 'none' 
 
+        # Photometry
+        self.photpath = str(files('lgpytars.photconf'))
+
         # Image subtraction setting (HOTPANTS)
+            # If you want to perform image subtraction, you need to prepare template images beforehand.
+            # Please place your template images in the directory below, or change it to your own path.
+            # If the directory does not exist, template_dir will be set to None and subtraction will be skipped.
         self.template_dir = '/mnt/dataset/obsdata/IMSNG/template_20250213'
+
+        # Archive base directories (customize if needed)
+        self.archive_paths = {
+            'IMSNG':     '/mnt/dataset/obsdata/IMSNG',
+            'Transient': '/mnt/dataset/obsdata/Transient',
+            'Exoplanet': '/mnt/dataset/obsdata/Exoplanet',
+            'PNUO':      '/mnt/dataset/obsdata/PNUO',
+            'MAAO':      '/mnt/dataset/obsdata/MAAO',
+            #'OTHER':   '/mnt/dataset/obsdata/OTHER'  # Add as needed
+        }
 
         # File transfer setting
         self.server = ''
@@ -125,6 +205,19 @@ class Red :
 
     #@staticmethod
     def banner(self):
+        """
+        Print an ASCII banner displaying the pipeline name, version, and CCD.
+
+        This method is called automatically during initialization to visually indicate
+        that the LGPYRED pipeline is ready, along with the selected CCD and release version.
+
+        The banner includes:
+        - The name of the pipeline ("LGPY imaging REDuction")
+        - The current version
+        - The CCD identifier (e.g., 'PNUO_C361K')
+
+        No parameters or return values.
+        """
         print(rf"""
         ██╗      ██████╗ ██████╗ ██╗   ██╗██████╗ ███████╗██████╗ 
         ██║     ██╔════╝ ██╔══██╗╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗
@@ -135,24 +228,34 @@ class Red :
         """)
         print(rf"""
         LGPY imaging REDuction pipeline for {self.ccd} 
-        2025-01-02 Version (by G. Lim; lim9gu@gmail.com) 
+        Release version: v1.0.0 (2025-07-07) 
+        Author: G. Lim (lim9gu@gmail.com)
         """)
         # banner from https://patorjk.com/software/taag/#p=display&v=0&f=ANSI%20Shadow&t=lgpyred%0A-PNUO
 
     def GetMaster(self, filetype, bin=None, exp=None, temp=None, filter_name=None):
         """
-        Find the closest master calibration file (bias, dark, or flat) based on the date.
+        Locate the closest master calibration file (bias, dark, or flat) for the given observation date.
 
         Parameters:
-        - filetype: Type of the master file ('bias', 'dark', 'flat')
-        - bin: Binning setting (optional for dark/flat)
-        - exp: Exposure time (optional for dark/flat)
-        - temp: CCD temperature (optional for dark)
+        ----------
+        imtype : str
+            Type of calibration file to retrieve ('zero', 'dark', or 'flat').
+        obsdate : str, optional
+            Observation date in 'YYYYMMDD' format. If None, uses the current folder name.
 
         Returns:
-        - The path of the closest master calibration file
-        """
+        -------
+        master_file : str
+            Full path to the closest matching master calibration file.
 
+        Notes:
+        -----
+        - Searches for calibration files within the archive directory defined in `self.bias_archive`,
+        `self.dark_archive`, or `self.flat_archive`, depending on `imtype`.
+        - Selects the calibration file with the closest date that is not after the observation date.
+        - If no suitable file is found, returns an empty string.
+        """
 
         # 파일 경로 패턴 정의
         if filetype == 'flat' and filter_name is not None:
@@ -197,22 +300,22 @@ class Red :
 
     def FileSum(self, imlist_name=None) :
         """
-        Create a summary of the image files in the current directory.
+        Generate a summary table for the given list of FITS images.
 
-        This method reads image files matching `imlist_name`, extracts relevant
-        header information, and creates a summary table which is saved to `self.sumfile`.
+        Parameters:
+        ----------
+        imlist : list of str, optional
+            List of image filenames. If None, matches files using `self.imlist_name`.
 
-        The summary includes:
-        - Filename
-        - Modified Julian Date (MJD)
-        - X and Y binning
-        - Image type (Bias, Dark, Flat, Light)
-        - Exposure time
-        - Filter used
-        - Object name
+        Actions:
+        -------
+        - Extracts basic header information such as OBJECT, FILTER, EXPTIME, CCD-TEMP, etc.
+        - Saves the summary as an ASCII table to `self.sumfile`.
+        - Stores the table in `self.filetable`.
 
-        Additionally, it updates the image headers to replace spaces in the object name
-        and adds the MJD.
+        Returns:
+        -------
+        None
         """
         #imlist = glob.glob(self.imlist_name); imlist.sort()
         if self.imlist_name == None:
@@ -306,7 +409,9 @@ class Red :
                 closest_bias = self.GetMaster('bias', bin=binning)
                 if closest_bias:
                     print(f"Using closest bias: {closest_bias}")
-                    os.system(f'cp {closest_bias} ./')
+                    #os.system(f'cp {closest_bias} ./')
+                    shutil.copy2(closest_bias, './')
+
                 else:
                     print("No bias available.")
 
@@ -318,7 +423,8 @@ class Red :
                 closest_dark = self.GetMaster('dark', bin=binning, exp=exptime, temp=ccdtemp)
                 if closest_dark:
                     print(f"Using closest dark: {closest_dark}")
-                    os.system(f'cp {closest_dark} ./')
+                    #os.system(f'cp {closest_dark} ./')
+                    shutil.copy2(closest_dark, './')
                 else:
                     print("No dark available.")
 
@@ -330,156 +436,10 @@ class Red :
                 closest_flat = self.GetMaster('flat', bin=binning, filter_name=band)
                 if closest_flat:
                     print(f"Using closest flat: {closest_flat}")
-                    os.system(f'cp {closest_flat} ./')
+                    #os.system(f'cp {closest_flat} ./')
+                    shutil.copy2(closest_flat, './')
                 else:
                     print("No flat available.")
-
-        '''
-        print('Inspecting dark...')
-        for obj in dark :
-            binning, exptime, ccdtemp = obj['XBINNING'], obj['EXPTIME'], obj['CCDTEMP0']
-            #exptime = obj['EXPTIME']
-            #band    = obj['FILTER']
-            closest_bias = self.GetMaster('bias', bin=binning)
-            if closest_bias:
-                print(f"Closest bias file found: {closest_bias}")
-                os.system(f'cp {closest_bias} ./')
-            else:
-                print(f"No bias found for bin: {binning}.") 
-            #"""       
-            if not ((bias['XBINNING'] == binning)).any():
-                #missing_bin.append(obj['XBINNING'])
-
-                print(f'No bias (bin: {binning}) exists.')
-                mbias = glob.glob(f'{self.bias_archive}2*_zero_bin{binning}.fits'); mbias.sort()
-                try:
-                    os.system(f'cp {mbias[-1]} ./')
-                except:
-                    print('No bias in archive.')
-            else:
-                pass
-            #"""
-        print('Inspecting flat...')
-        for obj in flat :
-            binning, band, ccdtemp = obj['XBINNING'], obj['FILTER'], obj['CCDTEMP0']
-            closest_bias = self.GetMaster('bias', bin=binning)
-            closest_dark = self.GetMaster('dark', bin=binning, exp=obj['EXPTIME'], temp=ccdtemp)
-            closest_flat = self.GetMaster('flat', bin=binning, filter_name=band)
-
-            if closest_bias:
-                print(f"Closest bias file found: {closest_bias}")
-                os.system(f'cp {closest_bias} ./')
-            else:
-                print(f"No bias found for bin: {binning}.")
-
-            if closest_dark:
-                print(f"Closest dark file found: {closest_dark}")
-                os.system(f'cp {closest_dark} ./')
-            else:
-                print(f"No dark found for bin: {binning}, exp: {obj['EXPTIME']}, temp: {ccdtemp}.")
-
-            if closest_flat:
-                print(f"Closest flat file found: {closest_flat}")
-                os.system(f'cp {closest_flat} ./')
-            else:
-                print(f"No flat found for bin: {binning}, band: {band}.")
-
-            #"""
-            binning = obj['XBINNING']
-            exptime = obj['EXPTIME']
-            band    = obj['FILTER']
-            ccdtemp = obj['CCDTEMP0']
-
-            if not ((bias['XBINNING'] == binning)).any() :
-                #missing_bin.append(obj['XBINNING'])
-                print(f'No bias (bin: {binning}) exists.')
-                mbias = glob.glob(f'{self.bias_archive}2*_zero_bin{binning}.fits'); mbias.sort()
-                try:
-                    os.system(f'cp {mbias[-1]} ./')
-                except:
-                    print('No bias in archive.')
-            else:
-                pass
-                
-            if not ((dark['XBINNING'] == binning) & (dark['EXPTIME'] == exptime) & (dark['CCDTEMP0'] == ccdtemp)).any() :
-                print(f'No dark (bin: {binning}, exp: {exptime}, ccdtemp: {ccdtemp}) exists.')
-                mdark = glob.glob(f'{self.dark_archive}2*_dark{exptime}_bin{binning}_{ccdtemp}.fits'); mdark.sort()
-                try:
-                    os.system(f'cp {mdark[-1]} ./')
-                except:
-                    print('No dark in archive.')
-            else:
-                pass
-            #"""
-
-        print('Inspecting science images...')
-        for obj in sci :
-            binning, exptime, band, ccdtemp = obj['XBINNING'], obj['EXPTIME'], obj['FILTER'], obj['CCDTEMP0']
-            closest_bias = self.GetMaster('bias', bin=binning)
-            closest_dark = self.GetMaster('dark', bin=binning, exp=exptime, temp=ccdtemp)
-            closest_flat = self.GetMaster('flat', bin=binning, filter_name=band)
-
-            if closest_bias:
-                print(f"Closest bias file found: {closest_bias}")
-                os.system(f'cp {closest_bias} ./')
-            else:
-                print(f"No bias found for bin: {binning}.")
-
-            if closest_dark:
-                print(f"Closest dark file found: {closest_dark}")
-                os.system(f'cp {closest_dark} ./')
-            else:
-                print(f"No dark found for bin: {binning}, exp: {exptime}, temp: {ccdtemp}.")
-
-            if closest_flat:
-                print(f"Closest flat file found: {closest_flat}")
-                os.system(f'cp {closest_flat} ./')
-            else:
-                print(f"No flat found for bin: {binning}, band: {band}.")
-
-            #"""
-            binning = obj['XBINNING']
-            exptime = obj['EXPTIME']
-            band    = obj['FILTER']
-            ccdtemp = obj['CCDTEMP0']
-
-            if not ((bias['XBINNING'] == binning) ).any():
-                #missing_bin.append(obj['XBINNING'])
-                print(f'No bias (bin: {binning}) exists.')
-                mbias = glob.glob(f'{self.bias_archive}2*_zero_bin{binning}.fits'); mbias.sort()
-                try:
-                    os.system(f'/usr/bin/cp {mbias[-1]} ./')
-                except:
-                    print('No bias in archive.')
-            else:
-                pass
-
-            if not ((dark['XBINNING'] == binning) & (dark['EXPTIME'] == exptime) & (dark['CCDTEMP0'] == ccdtemp)).any() :
-                #missing_bin.append(obj['XBINNING'])
-                #missing_exp.append(obj['EXPTIME'])
-                print(f'No dark (bin: {binning}, exp: {exptime}, ccdtemp: {ccdtemp}) exists.')
-                mdark = glob.glob(f'{self.dark_archive}2*_dark{exptime}_bin{binning}_{ccdtemp}.fits'); mdark.sort()
-                try:
-                    os.system(f'/usr/bin/cp {mdark[-1]} ./')
-                except:
-                    print('No dark in archive.')
-            else:
-                pass
-
-            if not ((flat['XBINNING'] == binning) & (flat['FILTER'] == band) ).any() :
-                #missing_bin.append(obj['XBINNING'])
-                #missing_exp.append(obj['EXPTIME'])
-                #missing_band.append(obj['FILTER'])
-                print(f'No flat (bin: {binning}, exp: {exptime}, band: {band}) exists.')
-                mflat = glob.glob(f'{self.flat_archive}2*_n{band}skyflat_bin{binning}.fits'); mflat.sort()
-                try:
-                    os.system(f'/usr/bin/cp {mflat[-1]} ./')
-                except:
-                    print('No flat in archive.')
-            else:
-                pass
-            #"""
-        '''
         print('Inspection finished.')
 
         self.summary = cat
@@ -487,19 +447,19 @@ class Red :
     
     def GenBias(self):
         """
-        Generate a master bias frame from individual bias frames.
+        Generate a master bias frame by combining zero-exposure images.
 
-        This method:
-        - Reads the summary table to identify bias frames.
-        - Groups bias frames by their binning settings.
-        - Combines the frames using median combination to create a master bias frame.
-        - Saves the master bias frame to the specified directory.
+        Actions:
+        --------
+        - Identifies all images with IMAGETYP='zero' from the file summary.
+        - Creates a master bias frame using IRAF's `zerocombine` task.
+        - Saves the master bias frame in the archive directory defined by `self.bias_archive`.
+        - The filename follows the convention: 'Bias_<curdate>.fits'.
 
-        It uses IRAF tasks to perform image statistics and combination.
-
-        Notes:
-        - The master bias frame is saved as `masterbias/{curdate}_zero_bin{bin}.fits`.
-        - This method removes temporary list files after processing.
+        Returns:
+        --------
+        masterbias : str
+            The filename of the generated master bias image.
         """
         iraf.noao(); iraf.imred(); iraf.ccdred()
         iraf.ccdred.setinst(instrume='camera', directo=self.irafdb, query='q', review='no')
@@ -538,24 +498,26 @@ class Red :
                 os.mkdir(f'{savedir}masterbias')
             shutil.copyfile(f'{self.curdir}/{output_name}', f'{savedir}masterbias/{output_name}')
         os.system('/usr/bin/rm bias*.list')
+
         iraf.dir('.')
         #self.masterbias = output_name
 
     def GenDark(self) :
         """
-        Generate master dark frames from individual dark frames.
+        Generate a master dark frame by combining dark-exposure images.
 
-        This method:
-        - Reads the summary table to identify dark frames.
-        - Groups dark frames by their binning settings and exposure times.
-        - Combines frames with the same binning and exposure time using median combination
-          to create master dark frames.
-        - Saves the master dark frames to the specified directory.
+        Actions:
+        --------
+        - Identifies all images with IMAGETYP='dark' from the file summary.
+        - Subtracts the master bias (generated via `GenBias`) from each dark frame.
+        - Creates a master dark using IRAF's `darkcombine` task.
+        - Saves the master dark frame in the archive directory defined by `self.dark_archive`.
+        - The filename follows the convention: 'Dark_<curdate>.fits'.
 
-        Notes:
-        - The master dark frames are saved with names indicating their exposure times, e.g.,
-          `masterdark/{curdate}_dark{exp}.fits`.
-        - This method removes temporary list files after processing.
+        Returns:
+        --------
+        masterdark : str
+            The filename of the generated master dark image.
         """
 
         sum     = self.summary
@@ -622,34 +584,21 @@ class Red :
 
     def GenFlat(self) :
         """
-        Generate master flat field images by processing raw flat field images.
+        Generate a master flat frame by combining skyflats or domeflats.
 
-        This function performs bias and dark subtraction on raw flat field images,
-        combines them to create master flat fields, and normalizes these master
-        flats.
-
-        Steps involved:
-        1. Filter the summary table for 'Flat Field' images.
-        2. Extract unique binning settings, filter bands, and flat field object types.
-        3. Perform bias and dark subtraction on each flat field image.
-        4. Combine processed flat field images into master flats for each combination of binning, filter, and object type.
-        5. Normalize the combined master flats.
-        6. Save the normalized master flats to a specified directory.
-
-        Attributes:
-        - `summary`: A DataFrame containing metadata of images.
-        - `curdate`: Current date used in naming the output files.
-        - `savedir`: Directory where the master flat files will be saved.
-        - `masterflat`: List of normalized master flat files created.
-
-        Parameters:
-        None
+        Actions:
+        --------
+        - Identifies all images with IMAGETYP='flat' from the file summary.
+        - Subtracts master bias and/or dark if `self.flat_zeroproc` or `self.flat_darkproc` is True.
+        - Normalizes individual flat images.
+        - Combines them into a master flat using IRAF's `flatcombine` task.
+        - Saves the master flat frame in the archive directory defined by `self.flat_archive`.
+        - The filename follows the convention: 'Flat_<filter>_<curdate>.fits'.
 
         Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
+        --------
+        masterflat : str
+            The filename of the generated master flat image.
         """
         sum       = self.summary
         curdate   = self.curdate
@@ -683,7 +632,8 @@ class Red :
                 iraf.imarith(operand1=im, op='-', operand2=bias_file, result='z' + im)
             else :
                 print('Zero subtraction is skipped...')
-                os.system(f'cp {im} z{im}')
+                #os.system(f'cp {im} z{im}')
+                shutil.copy2(im, f'z{im}')
 
             if self.flat_darkproc :
                 print('Dark subtraction...')
@@ -692,7 +642,8 @@ class Red :
 
             else :
                 print('Dark subtraction is skipped...')
-                os.system(f'cp z{im} dz{im}')
+                #os.system(f'cp z{im} dz{im}')
+                shutil.copy2(f'z{im}', f'dz{im}')
 
         ### Flat combine
         for bin in flatbinset :
@@ -732,88 +683,23 @@ class Red :
                         print('Normalised master flats are created.')
         iraf.imstat(images='*n*flat*.fits', fields='image,mean,midpt,mode,stddev,min,max', lsigma=3, usigma=3, Stdout=0)
         self.masterflat = glob.glob('*n*flat*.fits')
-    '''
-    def Apply(self) :
-        """
-        Apply bias and dark subtraction, and flat fielding to light frame images.
 
-        This function processes light frame images by performing the following steps:
-        1. Filter the summary table for 'Light Frame' images.
-        2. Extract unique binning settings, exposure times, and filter bands.
-        3. Perform bias subtraction on each light frame image.
-        4. Perform dark subtraction on each light frame image.
-        5. Apply flat fielding to each light frame image.
-        6. Store the processed images in a specified directory.
-
-        Attributes:
-        - `summary`: A DataFrame containing metadata of images.
-        - `curdate`: Current date used in naming the output files.
-        - `savedir`: Directory where the processed light frame files will be saved.
-        - `fdz_images`: List of fully processed light frame images created.
-
-        Parameters:
-        None
-
-        Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
-        """
-        sum       = self.summary
-        curdate   = self.curdate
-        savedir   = self.savedir
-
-        sci           = sum[sum['IMAGETYP'] == 'Light Frame']
-        scibinset     = list(set(sci['XBINNING'])) ; scibinset.sort()
-        sciexpset     = list(set(sci['EXPTIME']))  ; sciexpset.sort()
-        scibandset    = list(set(sci['FILTER']))   ; scibandset.sort()
-
-        fdz_images = []
-        for inim in sci['FILENAME'] :
-            print(sci[sci['FILENAME'] == inim])
-            imidx   = np.where(sci['FILENAME'] == inim)[0]
-            bin     = sci['XBINNING'][imidx][0]
-            exp     = sci['EXPTIME'][imidx][0]
-            band    = sci['FILTER'][imidx][0]
-            ccdtemp = sci['CCDTEMP0'][imidx][0]
-
-            mblist = glob.glob(f'{self.bias_archive}2*_zero_bin{bin}.fits'); mblist.sort() 
-            mdlist = glob.glob(f'{self.dark_archive}2*_dark{exp}_bin{bin}_{ccdtemp}.fits'); mdlist.sort() 
-            mflist = glob.glob(f'{self.flat_archive}2*_n{band}skyflat_bin{bin}.fits'); mflist.sort() 
-
-
-            if self.zeroproc :
-                print('Zero subtraction...')
-                #iraf.imarith(operand1=inim, op='-', operand2=f'./*_zero_bin{bin}.fits', result='z'+inim)
-                iraf.imarith(operand1=inim, op='-', operand2=f"{self.curdir}/{mblist[-1].split('/')[-1]}", result='z'+inim)
-            else :
-                print('Zero subtraction is skipped...')
-                os.system(f'cp {inim} z{inim}')
-
-            if self.darkproc :
-                print('Dark subtraction...')
-                #iraf.imarith(operand1 = 'z'+inim, op = '-', operand2 = f'./*_dark{exp}_bin{bin}.fits', result = 'dz'+inim)
-                iraf.imarith(operand1 = 'z'+inim, op = '-', operand2 = f"{self.curdir}/{mdlist[-1].split('/')[-1]}", result = 'dz'+inim)
-            else :
-                print('Dark subtraction is skipped...')
-                os.system(f'cp z{inim} dz{inim}')
-
-            if self.flatproc :
-                print('Flat fielding...')
-                dzinput = 'dz'+inim
-                nflat   = glob.glob(f'2*n{band}{self.flattype}_bin{bin}.fits')[0]
-                iraf.imarith(operand1=dzinput, op='/', operand2=nflat, result='f'+dzinput)      
-            else:
-                print('Flat fielding is skipped...!?')
-                os.system(f'cp dz{inim} fdz{inim}')
-            fdz_images.append(f'fdz{inim}')
-        print('Flat fielding is finished. Check the images.') 
-        self.fdz_images     = fdz_images
-    '''
     def Apply(self):
         """
-        Apply bias and dark subtraction, and flat fielding to light frame images.
+        Apply calibration frames (bias, dark, flat) to science images.
+
+        Actions:
+        --------
+        - Identifies all science images with IMAGETYP='object' from the file summary.
+        - Performs overscan and trimming correction if applicable.
+        - Applies master bias subtraction if `self.zeroproc` is True.
+        - Applies master dark subtraction if `self.darkproc` is True.
+        - Applies flat field correction if `self.flatproc` is True.
+        - Saves reduced science frames with suffix `_red.fits`.
+
+        Output:
+        -------
+        - Updates self.reduced_images with the list of processed science images.
         """
         sum     = self.summary
         curdate = self.curdate
@@ -856,7 +742,8 @@ class Red :
                 iraf.imarith(operand1=inim, op='-', operand2=bias_file, result='z' + inim)
             else:
                 print("Zero subtraction is skipped...")
-                os.system(f'cp {inim} z{inim}')
+                #os.system(f'cp {inim} z{inim}')
+                shutil.copy2(inim, f'z{inim}')
 
             # Dark subtraction
             if self.darkproc:
@@ -865,7 +752,8 @@ class Red :
                 iraf.imarith(operand1=zinput, op='-', operand2=dark_file, result='dz' + inim)
             else:
                 print("Dark subtraction is skipped...")
-                os.system(f'cp z{inim} dz{inim}')
+                #os.system(f'cp z{inim} dz{inim}')
+                shutil.copy2(f'z{inim}', f'dz{inim}')
 
             # Flat fielding
             if self.flatproc:
@@ -874,7 +762,8 @@ class Red :
                 iraf.imarith(operand1=dzinput, op='/', operand2=flat_file, result='f' + dzinput)
             else:
                 print("Flat fielding is skipped...")
-                os.system(f'cp dz{inim} fdz{inim}')
+                #os.system(f'cp dz{inim} fdz{inim}')
+                shutil.copy2(f'dz{inim}', f'fdz{inim}')
 
             fdz_images.append(f'fdz{inim}')
 
@@ -883,30 +772,25 @@ class Red :
 
     def Astrometry(self, imlist_name = None) :
         """
-        Perform astrometric calibration on processed light frame images using Astrometry.net.
+        Solve astrometry for reduced science images using Astrometry.net.
 
-        This function processes a list of fully processed light frame images (`fdz_images`)
-        by performing the following steps:
-        1. Read the configuration file for Source Extractor.
-        2. Solve the World Coordinate System (WCS) for each image using Astrometry.net.
-        3. Optionally, use RA and Dec from the image headers if available.
-        4. Clean up temporary files created during the process.
-        5. Store the successfully solved images in the `solved_images` attribute.
+        Actions:
+        --------
+        - Loops through reduced science images in `self.reduced_images`.
+        - Calls Astrometry.net via `solve-field` command-line interface.
+        - Uses custom configuration: pixel scale bounds (`scalelow`, `scalehigh`), 
+        radius, and `sexconfig` file for source extraction.
+        - Produces WCS-calibrated FITS files with `.wcs.fits` extension.
 
-        Attributes:
-        - `fdz_images`: List of fully processed light frame images.
-        - `sexconfig`: Configuration file for Source Extractor.
-        - `radius`: Search radius for astrometric calibration.
-        - `solved_images`: List of successfully solved images with WCS information.
+        Output:
+        -------
+        - Updates image headers with WCS solution if successful.
+        - Skips images that already contain valid WCS headers.
 
-        Parameters:
-        None
-
-        Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
+        Notes:
+        ------
+        - Requires astrometry.net and index files to be properly installed on the system.
+        - Configuration file can be set via the ASTROMETRY_CFG environment variable.
         """
 
         if imlist_name == None:
@@ -944,27 +828,20 @@ class Red :
 
     def Check(self, imlist_name = None):
         """
-        Verify and annotate solved images with target object information from a catalog.
+        Perform basic header checks and verification for science images.
 
-        This function performs the following steps:
-        1. Read observational specifications for the current camera.
-        2. Read and process a catalog of target objects, converting RA and Dec to degrees.
-        3. For each solved image, determine the image center's coordinates.
-        4. Match the image center to the target catalog to identify the closest object.
-        5. Check if the closest object is within the field of view.
-        6. Annotate the image header with the matched object's name if within the field of view.
+        Actions:
+        --------
+        - Checks all science images for required FITS header keywords:
+        OBJECT, DATE-OBS, FILTER, EXPTIME, CCD-TEMP, etc.
+        - Replaces missing or invalid values with defaults (e.g., CCD-TEMP with self.temp2replace).
+        - Compares target name in header against a reference list (`self.alltarget`)
+        to validate naming and consistency.
 
-        Attributes:
-        - `solved_images`: List of solved images with WCS information.
-
-        Parameters:
-        None
-
-        Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
+        Output:
+        -------
+        - Logs or prints warnings for missing or incorrect header values.
+        - Ensures all relevant headers are present before further reduction steps.
         """
         if imlist_name == None:
             imlist = self.solved_images
@@ -1014,31 +891,25 @@ class Red :
 
     def EditName(self, imlist_name = None) :
         """
-        Rename solved images according to specified naming convention.
+        Rename FITS files to follow a standardized naming convention.
 
-        This function renames solved images based on the following information extracted
-        from the image header:
-        - Exposure time (EXPTIME)
-        - UT date and start time (UTDATE and UTSTART)
-        - Filter used (FILTER)
-
-        The new filename format is:
+        Actions:
+        --------
+        - Constructs a new filename using DATE-OBS, FILTER, OBJECT, and CCD ID.
+        - Applies consistent formatting is:
         'Calib-{ccd}-{OBJECT}-{UTDATE}-{UTSTART}-{FILTER}-{EXPTIME}.fits'
+        - Renames files on disk and updates any internal references.
 
-        Attributes:
-        - `ccd`: The identifier for the camera or CCD used.
-        - `solved_images`: List of solved images with WCS information.
-        - `reduced_images`: List of renamed reduced images.
+        Output:
+        -------
+        - Files on disk are renamed to match the standard format.
+        - Useful for organizing files and avoiding duplicates across nights/CCDs.
 
-        Parameters:
-        None
-
-        Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
+        Notes:
+        ------
+        - Should be used with caution if filenames are already used in another system.
         """
+
         if imlist_name == None:
             imlist = self.solved_images
             self.summary['CALNAME'] = self.summary['FILENAME'].copy()
@@ -1062,7 +933,8 @@ class Red :
                     self.summary['CALNAME'][idx] = inim
                 #'''
                 print(f'Copy {inim} to {newimage}...')
-                os.system(f'/usr/bin/cp {inim} {newimage}')
+                #os.system(f'/usr/bin/cp {inim} {newimage}')
+                shutil.copy2(inim, newimage)
             print(f"Basic preprocessing of {self.ccd} is finished.")
 
             print('Remove previous check images...')
@@ -1082,12 +954,31 @@ class Red :
                 newimage = f'Calib-{self.ccd}-{OBJECT}-{str(UTDATE[0:4])}{str(UTDATE[5:7])}{str(UTDATE[8:10])}-{str(UTSTART[0:2])}{str(UTSTART[3:5])}{str(UTSTART[6:8])}-{FILTER}-{str(EXPTIME)}.fits'
 
                 print(f'Copy {inim} to {newimage}...')
-                os.system(f'/usr/bin/cp {inim} {newimage}')
+                #os.system(f'/usr/bin/cp {inim} {newimage}')
+                shutil.copy2(inim, newimage)
             print(f"Basic preprocessing of {self.ccd} is finished.")  
         self.reduced_images = glob.glob('Cal*.fits') ; self.reduced_images.sort()
 
     def FluxScaling(self, imlist_name = None, zp0=25, zpkey='ZP'):
+        """
+        Normalize the flux of science images for consistent photometric scaling.
 
+        Actions:
+        --------
+        - Computes the average flux level (e.g., background or source-based) for each image.
+        - Scales images multiplicatively to match a common reference level.
+        - Useful for aligning flux levels before stacking or image subtraction.
+
+        Output:
+        -------
+        - Saves scaled images, possibly with a new suffix or overwrites.
+        - Improves accuracy in subsequent steps like image subtraction or photometry.
+
+        Notes:
+        ------
+        - Assumes relative photometry across images in the same filter and object.
+        - Optional step depending on user's stacking or subtraction method.
+        """
         if imlist_name == None:
             imlist      = self.reduced_images 
         elif imlist_name != None:
@@ -1116,35 +1007,24 @@ class Red :
 
     def Stack(self, imlist_name = None):
         """
-        Stack calibrated light frame images by object, filter, and binning.
+        Combine aligned science images into a single stacked image.
 
-        This function performs the following steps:
-        1. Identify unique objects, filters, and binning settings from the list of calibrated light frames.
-        2. For each combination of object, filter, and binning:
-            a. Select the relevant images.
-            b. Group images by epoch using the `SameEpoch` function.
-            c. Perform WCS remapping on the images using the `run_wcsremap_epoch` function.
-            d. Combine the remapped images using the `imcombine_set` function.
-        3. Handle cases where no images are found for a particular combination.
-        4. Print status messages throughout the process.
+        Actions:
+        --------
+        - Groups images by filter and object.
+        - Uses IRAF's `imcombine` or a similar method to median- or average-stack images.
+        - Optionally applies rejection algorithms (e.g., `none`, `minmax`, etc.) based on self.reject.
 
-        Attributes:
-        - `sep`: Separator used in the `SameEpoch` function.
-        - `wrapper`: Wrapper used for WCS registration in the `run_wcsremap_epoch` function.
-        - `reject`: Rejection method used in the `imcombine_set` function.
+        Output:
+        -------
+        - Produces a stacked FITS image for each group.
+        - Improves signal-to-noise ratio and removes cosmic rays or artifacts.
 
-        Parameters:
-        None
-
-        Returns:
-        None
-
-        Raises:
-        IOError: If there are issues with reading or writing image files.
+        Notes:
+        ------
+        - Image alignment (WCS-based or pixel-based) should be performed beforehand.
         """
-        #imlist_name = 'Cal*.fits'
-        #imlist_name = 'a*.fit'
-      
+
         if imlist_name == None:
             imlist      = self.fscaled_images
             objset  =  list(set(self.summary['OBJECT'][self.summary['IMAGETYP'] == 'Light Frame']))
@@ -1186,9 +1066,24 @@ class Red :
 
     def Dophot(self, imlist_name = None, ref='PS1', magup=12, maglow=17):
         """
-        Single image와 combined image 모두 측광해둘 예정
-        """
+        Perform aperture photometry on science or stacked images.
 
+        Actions:
+        --------
+        - Uses a configured photometry tool (e.g., SExtractor or custom script).
+        - Extracts source fluxes, positions, and errors.
+        - Optionally matches photometric results with known catalogs.
+
+        Output:
+        -------
+        - Saves photometry catalogs for each input image.
+        - Can be used for generating light curves or calibrating magnitudes.
+
+        Notes:
+        ------
+        - Photometry configuration is loaded from `self.photpath`.
+        - May depend on prior background subtraction or image quality checks.
+        """
         if imlist_name == None:
             imlist      = self.reduced_images + self.combined_images 
         elif imlist_name != None:
@@ -1209,24 +1104,37 @@ class Red :
 
                 if ref == None:
                     try:
-                        phot(inim, target_catalog='', band=band, path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL',  ratio=1, onlyzp=True, snrcut=0.1, magup=12, maglow=17)
+                        phot(inim, target_catalog='', band=band, path=self.photpath, savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL',  ratio=1, onlyzp=True, snrcut=0.1, magup=12, maglow=17)
 
                     except:
                         try:
-                            phot(inim, target_catalog='', band=band, path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref='APASS', mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=1, onlyzp=True, snrcut=0.1, magup=11, maglow=15)
+                            phot(inim, target_catalog='', band=band, path=self.photpath, savecat=True, subprefix='hdCalib', ref='APASS', mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=1, onlyzp=True, snrcut=0.1, magup=11, maglow=15)
                         except:
                             print('No stars matched with APASS or PS1. PLEASE DO MANUALLY.')
                         
-                            os.system(f'mv {inim} ./photretry/')
-                            os.system(f'mv {inim[:-5]}.chaper.fits ./photretry/')
-                            os.system(f'mv {inim[:-5]}.chbkg.fits ./photretry/')
-                            os.system(f'mv {inim[:-5]}.chseg.fits ./photretry/')
-                            os.system(f'mv {inim[:-5]}.merge.cat ./photretry/')
+                            #os.system(f'mv {inim} ./photretry/')
+                            #os.system(f'mv {inim[:-5]}.chaper.fits ./photretry/')
+                            #os.system(f'mv {inim[:-5]}.chbkg.fits ./photretry/')
+                            #os.system(f'mv {inim[:-5]}.chseg.fits ./photretry/')
+                            #os.system(f'mv {inim[:-5]}.merge.cat ./photretry/')
+                            # Ensure the target directory exists
+                            os.makedirs('./photretry/', exist_ok=True)
+
+                            # Get base name without .fits extension
+                            basename = inim[:-5]
+
+                            # Move files
+                            shutil.move(inim, './photretry/')
+                            shutil.move(f'{basename}.chaper.fits', './photretry/')
+                            shutil.move(f'{basename}.chbkg.fits', './photretry/')
+                            shutil.move(f'{basename}.chseg.fits', './photretry/')
+                            shutil.move(f'{basename}.merge.cat', './photretry/')
+
                             print(f'{inim} is moved to photretry directory.')
 
                             self.reduced_images.remove(inim)
                 else:
-                    phot(inim, target_catalog='', band=band, path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref=ref, mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL',  ratio=1, onlyzp=True, snrcut=0.1, magup=magup, maglow=maglow)
+                    phot(inim, target_catalog='', band=band, path=self.photpath, savecat=True, subprefix='hdCalib', ref=ref, mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL',  ratio=1, onlyzp=True, snrcut=0.1, magup=magup, maglow=maglow)
                         
             else:
                 print(f'{band}-band is not supported. TBD.')
@@ -1236,19 +1144,26 @@ class Red :
     def Subtract(self, imlist_name='Cal*.com.fits', template_dir=None):
         """
         Perform image subtraction using HOTPANTS.
-        
-        This function identifies the appropriate template image for each science image,
-        then uses HOTPANTS to perform subtraction.
 
-        Parameters:
-        imlist_name (str): Pattern to match science images.
-        template_dir (str): Directory containing the template images.
+        Actions:
+        --------
+        - Matches science images with template images from `self.template_dir`.
+        - Applies PSF-matching and subtraction via HOTPANTS.
+        - Produces residual images highlighting transient or variable sources.
 
-        Returns:
-        None
+        Output:
+        -------
+        - Saves subtracted FITS images to disk.
+        - Optionally performs photometry on subtracted images.
+
+        Raises:
+        -------
+        - RuntimeError if `self.template_dir` is None or does not contain valid templates.
+
+        Notes:
+        ------
+        - Template images must be pre-aligned and photometrically matched.
         """
-
-
         if imlist_name == None:
             imlist      = self.combined_images 
         elif imlist_name != None:
@@ -1301,28 +1216,32 @@ class Red :
 
     def Archive(self, imlist_name = None):
         """
-        Archive processed images into designated storage based on the CCD and program type.
+        Archive processed images into a structured directory based on CCD and program type.
 
         Parameters:
-        - imlist_name (str, optional): If provided, only images matching this pattern will be archived.
+        -----------
+        imlist_name : str, optional
+            If provided, only files matching this pattern will be archived.
+            If not, the method uses self.reduced_images + self.combined_images + self.sub_images.
 
-        The method:
-        - Determines the archive path based on self.ccd and program type (IMSNG or local).
-        - Creates necessary directories if they don't exist.
-        - Moves the processed images to the appropriate archive.
+        Actions:
+        --------
+        - Reads image headers to determine object name, filter, and observing program.
+        - Moves files to archive directories grouped by program (IMSNG, Transient, Exoplanet) or CCD type.
+        - Sets appropriate permissions for access.
+
+        Output:
+        -------
+        - Processed images are moved to `/mnt/dataset/obsdata/[Program or CCD]/[Object]/[CCD]/[Filter]/`.
+
+        Notes:
+        ------
+        - Assumes the directory structure exists or is creatable.
+        - Useful for centralizing data from multiple observing runs or instruments.
         """
-        
-        #imsng_archive = '/mnt/dataset/obsdata/IMSNG' 
-        #pnuo_archive  = '/mnt/dataset/obsdata/PNUO'
-        archive_base = {
-            "PNUO": "/mnt/dataset/obsdata/PNUO",
-            "MAAO": "/mnt/dataset/obsdata/MAAO",
-            #"OTHER": "/mnt/dataset/obsdata/OTHER"  # Default directory for unknown CCDs
-        }
-
-        imsng_archive     = "/mnt/dataset/obsdata/IMSNG"
-        transient_archive = "/mnt/dataset/obsdata/Transient"
-        exoplanet_archive = "/mnt/dataset/obsdata/Exoplanet"
+        imsng_archive     = self.archive_paths['IMSNG']
+        transient_archive = self.archive_paths['Transient']
+        exoplanet_archive = self.archive_paths['Exoplanet']
 
         if imlist_name is None:
             imlist = self.reduced_images + self.combined_images
@@ -1352,17 +1271,18 @@ class Red :
                 print(f'Move {inim} to {exoplanet_archive}')
                 archive_path = os.path.join(exoplanet_archive, obj, self.ccd, band)                             
             else:
-                if self.ccd == 'MAAO_STX16803':
-                    print(f"Move {inim} to {archive_base['MAAO']}")
-                    archive_path = os.path.join(archive_base['MAAO'], obj, self.ccd, band)
-                elif self.ccd == 'PNUO_C361K': 
-                    print(f"Move {inim} to {archive_base['PNUO']}")
-                    archive_path = os.path.join(archive_base['PNUO'], obj, self.ccd, band)
+                if self.ccd.startswith('MAAO'):
+                    archive_path = os.path.join(self.archive_paths['MAAO'], obj, self.ccd, band)
+                elif self.ccd.startswith('PNUO'):
+                    archive_path = os.path.join(self.archive_paths['PNUO'], obj, self.ccd, band)
+                else:
+                    raise ValueError(f"No archive path defined for CCD '{self.ccd}' and program '{program}'")
             #"""
 
             os.makedirs(archive_path, exist_ok=True)
             dest_file_path = os.path.join(archive_path, os.path.basename(inim))
-            os.system(f'/usr/bin/cp {inim} {dest_file_path}')
+            #os.system(f'/usr/bin/cp {inim} {dest_file_path}')
+            shutil.copy2(inim, dest_file_path)
 
             os.system(f'chmod -R 777 {archive_path}')
         print('Finished.')

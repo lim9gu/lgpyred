@@ -70,47 +70,47 @@ This runs the full sequence: file summary, calibration generation, application, 
 ```bash
 lgpyred --all --imlist '*.fit'
 ```
-Generate only file summary
+#### Generate only file summary
 ```bash
 lgpyred --filesum --imlist '*.fit'
 ```
-Generate only master calibration frames (bias, dark, flat)
+#### Generate only master calibration frames (bias, dark, flat)
 ```bash
 lgpyred --genbias --gendark --genflat --imlist '*.fit'
 ```
-Apply calibration (bias/dark/flat) to science frames
+#### Apply calibration (bias/dark/flat) to science frames
 ```bash
 lgpyred --apply --imlist '*.fit'
 ```
-Run astrometric calibration (astrometry.net)
+#### Run astrometric calibration (astrometry.net)
 ```bash
 lgpyred --astrometry --imlist '*.fit'
 ```
-Check astrometric solutions
+#### Check astrometric solutions
 ```bash
 lgpyred --check --imlist '*.fit'
 ```
-Edit FITS header (e.g., OBJECT, FILTER, DATE)
+#### Edit FITS header (e.g., OBJECT, FILTER, DATE)
 ```bash
 lgpyred --editname --imlist '*.fit'
 ```
-Perform photometry on individual reduced images
+#### Perform photometry on individual reduced images
 ```bash
 lgpyred --dophot --imlist '*.fit'
 ```
-Flux scale and stack reduced images
+#### Flux scale and stack reduced images
 ```bash
 lgpyred --fluxscaling --stack --imlist '*.fit'
 ```
-Perform photometry again on stacked image
+#### Perform photometry again on stacked image
 ```bash
 lgpyred --dophot
 ```
-Subtract template image (image subtraction)
+#### Subtract template image (image subtraction)
 ```bash
 lgpyred --subtract --imlist '*.fit' --template_dir /your_hotpants_template_path/template_20250213/
 ```
-Archive reduced images
+#### Archive reduced images
 ```bash
 lgpyred --archive --imlist '*.fit'
 ```

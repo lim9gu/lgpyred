@@ -61,20 +61,60 @@ pip install .
 This will install lgpyred along with its required dependencies...
 
 ### 4. Example usage
-Once installed, you can use lgpyred as a command-line tool:
+4. Example Usage
 
-```python
-lgpyred --input image.fits --mode reduce --date 20240625
+Once installed, you can use lgpyred as a command-line tool for various steps in your image reduction pipeline. Below are examples of how to run different steps:
+
+Run the entire pipeline
+
+This runs the full sequence: file summary, calibration generation, application, astrometry, photometry, stacking, subtraction, and archiving.
+```bash
+lgpyred --all --imlist '*.fit'
 ```
-Alternatively, you can also use it as a Python module:
-
-```python
-from lgpyred.lgpyred import Red
-
-red = Red(ccd='PNUO_C361K')
-main()
+Generate only file summary
+```bash
+lgpyred --filesum --imlist '*.fit'
 ```
-
+Generate only master calibration frames (bias, dark, flat)
+```bash
+lgpyred --genbias --gendark --genflat --imlist '*.fit'
+```
+Apply calibration (bias/dark/flat) to science frames
+```bash
+lgpyred --apply --imlist '*.fit'
+```
+Run astrometric calibration (astrometry.net)
+```bash
+lgpyred --astrometry --imlist '*.fit'
+```
+Check astrometric solutions
+```bash
+lgpyred --check --imlist '*.fit'
+```
+Edit FITS header (e.g., OBJECT, FILTER, DATE)
+```bash
+lgpyred --editname --imlist '*.fit'
+```
+Perform photometry on individual reduced images
+```bash
+lgpyred --dophot --imlist '*.fit'
+```
+Flux scale and stack reduced images
+```bash
+lgpyred --fluxscaling --stack --imlist '*.fit'
+```
+Perform photometry again on stacked image
+```bash
+lgpyred --dophot
+```
+Subtract template image (image subtraction)
+```bash
+lgpyred --subtract --imlist '*.fit' --template_dir /mnt/dataset/obsdata/IMSNG/template_20250213/
+```
+Archive reduced images
+```bash
+lgpyred --archive --imlist '*.fit'
+```
 ### 5. Supported Platforms
 This pipeline has been tested on Ubuntu Linux 24 LTS.
 Support for macOS or Windows may require additional adjustments, especially for installing external tools like IRAF or Hotpants.

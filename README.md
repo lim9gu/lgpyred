@@ -24,27 +24,27 @@ cd lgpyred
 pip install .
 ```
 
-This will install lgpyred along with its required dependencies, including:
+This will install `lgpyred` along with the following required Python dependencies:
 
-astropy==6.0.1
-astroquery==0.4.7
-matplotlib==3.8.4
-numpy==1.26.4
-scipy==1.12.0
-pyraf==2.1.13
-paramiko==3.4.0
-pillow==9.2.0
+- `astropy==6.0.1` – Core astronomy library for Python  
+- `astroquery==0.4.7` – Tools to access online astronomical databases  
+- `matplotlib==3.8.4` – Plotting library for visualization  
+- `numpy==1.26.4` – Fundamental package for numerical computations  
+- `scipy==1.12.0` – Scientific computing tools  
+- `pyraf==2.1.13` – IRAF functionality in Python (deprecated but still used)  
+- `paramiko==3.4.0` – SSH2 protocol library for remote operations  
+- `pillow==9.2.0` – Python Imaging Library fork, for handling images
 
-Note: It is strongly recommended to use a Python virtual environment (e.g., via venv or conda) before installation to avoid conflicts with other Python packages.
+> **Note:** It is strongly recommended to use a Python virtual environment (e.g., via `venv` or `conda`) before installation to avoid conflicts with other Python packages.
 
 ### 2. Install required external software
 
 The pipeline also depends on several standalone external tools that are not included in the Python package. These must be installed separately on your system:
 
-IRAF 2.1.7
-astrometry.net
-wcsremap (by Andrew Becker)
-hotpants (by Andrew Becker)
+- `IRAF 2.17 (https://github.com/iraf-community)
+- `Astrometry.net (Lang et al. 2010)
+- `wcsremap (by Andrew Becker)
+- `hotpants (by Andrew Becker)
 
 Please refer to the docs/ folder for detailed step-by-step installation guides for each tool.
 

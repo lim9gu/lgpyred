@@ -5,7 +5,7 @@
 This pipeline was developed to automate standard procedures in observational astronomy, including astrometric calibration, image alignment, subtraction, and photometry.
 
 developed by Gu Lim
----
+
 
 ## Installation Guide
 

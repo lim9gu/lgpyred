@@ -62,7 +62,7 @@ This will install lgpyred along with its required dependencies...
 
 ### 4.1 Example usage (command-line)
 
-Once installed, you can use lgpyred as a command-line tool for various steps in your image reduction pipeline. Below are examples of how to run different steps:
+Once installed, you can use **lgpyred** as a command-line tool for various steps in your image reduction pipeline. Below are examples of how to run different steps:
 
 Run the entire pipeline
 
@@ -108,7 +108,7 @@ lgpyred --dophot
 ```
 Subtract template image (image subtraction)
 ```bash
-lgpyred --subtract --imlist '*.fit' --template_dir /mnt/dataset/obsdata/IMSNG/template_20250213/
+lgpyred --subtract --imlist '*.fit' --template_dir /your_hotpants_template_path/template_20250213/
 ```
 Archive reduced images
 ```bash
@@ -133,19 +133,21 @@ red = Red(imlist_name='*.fit',  # or specify a list file name
           flatproc=True,
           flattype='skyflat')
 ```
-You can choose specific procedures you want to test or do like above.
+You can choose specific procedures you want to include or exclude (ex. turning off dark subtraction : darkproc=False).
 
 #### Run specific methods
 
 ```python
-red.FileSum()
+red.FileSum(imlist_name='*.fit')
 red.GenBias()
 red.GenDark()
 red.GenFlat()
 red.Apply()
 red.Astrometry()
 red.Dophot()
+red.Archive(imlist_name='Calib-PNUO_C361K-NGC4653-20250609-121000-r-120.fits')
 ```
+You can run both specific image and image list.
 
 #### Or run the entire pipeline logic defined in main()
 ```python

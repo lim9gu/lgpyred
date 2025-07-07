@@ -21,7 +21,7 @@ If you have not already done so, clone the repository using Git and install the 
 ```bash
 git clone https://github.com/lim9gu/lgpyred.git
 cd lgpyred
-pip install .
+pip install .```
 
 This will install lgpyred along with its required dependencies, including:
 

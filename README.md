@@ -41,10 +41,10 @@ This will install `lgpyred` along with the following required Python dependencie
 
 The pipeline also depends on several standalone external tools that are not included in the Python package. These must be installed separately on your system:
 
-- `IRAF 2.17 (https://github.com/iraf-community)
-- `Astrometry.net (Lang et al. 2010)
-- `wcsremap (by Andrew Becker)
-- `hotpants (by Andrew Becker)
+- `IRAF 2.17` (https://github.com/iraf-community)
+- `Astrometry.net` (Lang et al. 2010)
+- `wcsremap` (by Andrew Becker)
+- `hotpants` (by Andrew Becker)
 
 Please refer to the docs/ folder for detailed step-by-step installation guides for each tool.
 

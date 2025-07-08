@@ -22,7 +22,6 @@ from importlib.resources import files
 import importlib.resources as pkg_resources
 
 import lgytars.data
-
 from lgpytars.SameEpoch import SameEpoch
 from lgpytars.imcombine import imcombine_set, imcombine_epoch
 from lgpytars.reduction.hdrcheck import wcscenter
@@ -138,9 +137,9 @@ class Red :
         self.sumfile     = sumfile
 
         # Reduction setting
-        self.zeroproc    = True
-        self.darkproc    = True
-        self.flatproc    = True
+        self.zeroproc    = zeroproc
+        self.darkproc    = darkproc
+        self.flatproc    = flatproc
 
         self.flat_zeroproc = True
         self.flat_darkproc = True
@@ -807,12 +806,12 @@ class Red :
         print('Solving WCS using Astrometry.net...')
         for n, inim in enumerate(imlist) :
             if self.radec == False:
-                com = f'solve-field {inim} --resort --cpulimit 120 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n'
+                com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n'
             else:
                 hdr     = fits.getheader(inim)
                 ra, dec = ':'.join(hdr['OBJCTRA'].split(' ')), ':'.join(hdr['OBJCTDEC'].split(' '))
 
-                com = f'solve-field {inim} --resort --cpulimit 120 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir . --ra {ra} --dec {dec} --overwrite\n'
+                com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir . --ra {ra} --dec {dec} --overwrite\n'
 
             print(com)
             print(f'{n} th of {len(imlist)}')

@@ -33,8 +33,8 @@ def hdrcheck(imlist_name, ccd, fov, racen='', deccen=''):
 	from astropy.coordinates import SkyCoord
 
 	with pkg_resources.path(lgpytars.data, 'alltarget.dat') as path:
-    all_catname = str(path)
-    allcat = ascii.read(all_catname)
+		all_catname = str(path)
+		allcat = ascii.read(all_catname)
 
 	ra, dec = all_cat['ra'], all_cat['dec']
 	radeg, decdeg = [], []

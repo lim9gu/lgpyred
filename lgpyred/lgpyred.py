@@ -21,7 +21,7 @@ from astropy.coordinates import SkyCoord
 from importlib.resources import files
 import importlib.resources as pkg_resources
 
-import lgytars.data
+import lgpytars.data
 from lgpytars.SameEpoch import SameEpoch
 from lgpytars.imcombine import imcombine_set, imcombine_epoch
 from lgpytars.reduction.hdrcheck import wcscenter

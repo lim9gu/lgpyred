@@ -31,11 +31,11 @@ This will install `lgpyred` along with the following required Python dependencie
 - `matplotlib==3.8.4` – Plotting library for visualization  
 - `numpy==1.26.4` – Fundamental package for numerical computations  
 - `scipy==1.12.0` – Scientific computing tools  
-- `pyraf==2.1.13` – IRAF functionality in Python (deprecated but still used)  
+- `pyraf==2.2.2` – IRAF functionality in Python (deprecated but still used)  
 - `paramiko==3.4.0` – SSH2 protocol library for remote operations  
 - `pillow==9.2.0` – Python Imaging Library fork, for handling images
 
-> **Note:** It is strongly recommended to use a Python virtual environment (e.g., via `venv` or `conda`) before installation to avoid conflicts with other Python packages.
+> **Note:** It is strongly recommended to use a Python (==3.9.12) virtual environment (e.g., via `venv` or `conda`) before installation to avoid conflicts with other Python packages.
 
 ### 2. Install required external software
 

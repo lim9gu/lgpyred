@@ -161,7 +161,7 @@ class Red :
         self.radec     = False # if True, astronometry.net search for wcs using radec in fits image header 
         #self.sexconfig = f'/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.{self.ccd}.sex'
 
-        self.sexconfig = str(files('lgpyred.astrom_config').joinpath(f'astrometry.net.{self.ccd}.sex'))
+        self.sexconfig = str(files('lgpyred.astrom_config'))
 
         self.radius    = 0.7 # degree of querying radius of stars in index files
 
@@ -797,21 +797,28 @@ class Red :
         elif imlist_name != None:
             imlist   = glob.glob(imlist_name)
 
+        self.sexconfig = str(files('lgpyred.astrom_config'))
+
         sexconfig   = self.sexconfig
         radius      = self.radius
         scalelow    = self.scalelow
         scalehigh   = self.scalehigh
 
+        sexparam    = str(files('lgpyred.astrom_config').joinpath('astrometry.net.param'))
+        sexconv     = str(files('lgpyred.astrom_config').joinpath('astrometry.net.conv'))
+        sexnnw      = str(files('lgpyred.astrom_config').joinpath('astrometry.net.nnw'))
+
         os.system(f'cat {sexconfig}')
         print('Solving WCS using Astrometry.net...')
         for n, inim in enumerate(imlist) :
             if self.radec == False:
-                com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n'
+                #com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n'
+                com = f"solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor --source-extractor-path 'source-extractor -PARAMETERS_NAME {sexparam} -FILTER_NAME {sexconv} -STARNNW_NAME {sexnnw}' --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n"
             else:
                 hdr     = fits.getheader(inim)
                 ra, dec = ':'.join(hdr['OBJCTRA'].split(' ')), ':'.join(hdr['OBJCTDEC'].split(' '))
 
-                com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir . --ra {ra} --dec {dec} --overwrite\n'
+                com = f"solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor --source-extractor-path 'source-extractor -PARAMETERS_NAME {sexparam} -FILTER_NAME {sexconv} -STARNNW_NAME {sexnnw}' --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir . --ra {ra} --dec {dec} --overwrite\n"
 
             print(com)
             print(f'{n} th of {len(imlist)}')

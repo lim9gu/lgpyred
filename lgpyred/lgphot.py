@@ -16,6 +16,7 @@ from astropy.stats import sigma_clipped_stats, sigma_clip
 from astropy.visualization import (MinMaxInterval, SqrtStretch, ImageNormalize)
 from astropy.visualization import ZScaleInterval, LinearStretch
 
+from importlib.resources import files
 import importlib.resources as pkg_resources
 import lgpyred.imsng.imsngphot as iph 
 from lgpyred.reduction.hdrcheck import wcscenter
@@ -131,11 +132,17 @@ def PlotPhotRes(inim, band, ref, mykey, myerrkey, totals, alives, exiles, ZP, zp
     os.system(f'mv {outname} ./fig/')
     plt.close()
 
-def SE(inim, outcat_name, pixscale, path='./lgpyred/photconf/', gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
-    sexconf   = path+'default.sex'
-    sexnnw    = path+'default.nnw'
-    sexconv   = path+'default.conv'
-    sexparam  = path+'default.param'
+def SE(inim, outcat_name, pixscale, path=None, gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
+
+    if path is None:
+        path = pkg_resources.resource_filename('lgpyred', 'photconf')
+
+    basepath = files('lgpyred.photconf')
+    sexconf  = basepath.joinpath('default.sex')
+    sexnnw   = basepath.joinpath('default.nnw')
+    sexconv  = basepath.joinpath('default.conv')
+    sexparam = basepath.joinpath('default.param')
+
     checkimage_type = 'BACKGROUND,SEGMENTATION,APERTURES'
     checkimage_name = inim[:-5]+'.chbkg.fits,'+inim[:-5]+'.chseg.fits,'+inim[:-5]+'.chaper.fits'
 
@@ -185,13 +192,13 @@ def calpixscale(data, hdr) :
 
 def process_catalog(ref, obj, ra, dec, fov, ratio):
     query_functions = {
-        'PS1': {'query': imsngphot.ps1_query, 'convert': imsngphot.ps1_Tonry, 'suffix': 'ps1'},
-        'APASS': {'query': imsngphot.apass_query, 'convert': imsngphot.apass_Blanton, 'suffix': 'apass'},
-        'APASS10': {'query': imsngphot.apass10_query, 'convert': imsngphot.apass_Blanton, 'suffix': 'apass10'},
-        '2MASS': {'query': imsngphot.twomass_query, 'convert': None, 'suffix': '2mass'},
-        'SMdr2': {'query': imsngphot.SkyMapper_query, 'convert': imsngphot.SkyMapper_Blanton, 'suffix': 'skymapper'},
-        'SDSS': {'query': imsngphot.sdss_query, 'convert': imsngphot.sdss_Blanton, 'suffix': 'sdss'},
-        'L13': {'query': imsngphot.landolt13_query, 'convert': None, 'suffix': 'L13'},
+        'PS1': {'query': iph.ps1_query, 'convert': iph.ps1_Tonry, 'suffix': 'ps1'},
+        'APASS': {'query': iph.apass_query, 'convert': iph.apass_Blanton, 'suffix': 'apass'},
+        'APASS10': {'query': iph.apass10_query, 'convert': iph.apass_Blanton, 'suffix': 'apass10'},
+        '2MASS': {'query': iph.twomass_query, 'convert': None, 'suffix': '2mass'},
+        'SMdr2': {'query': iph.SkyMapper_query, 'convert': iph.SkyMapper_Blanton, 'suffix': 'skymapper'},
+        'SDSS': {'query': iph.sdss_query, 'convert': iph.sdss_Blanton, 'suffix': 'sdss'},
+        'L13': {'query': iph.landolt13_query, 'convert': None, 'suffix': 'L13'},
     }
     
     if ref not in query_functions:
@@ -340,7 +347,7 @@ def phot(imlist_name, target_catalog='', band='V', path='./lgpyred/photconf/', s
         photcat, photcom, _, rms = SE(inim, outcat_name, pixscale, path=path, FWHM=FWHM, gain=gain, minarea=minarea, det_thresh=det_thresh, deb_nthresh=deb_nthresh, deb_mincont=deb_mincont, backsize=backsize, backfiltersize=backfiltersize, backphoto_type=backphoto_type, backphoto_thick=backphoto_thick, aperture=aperture)
 
         # Merge catalog
-        merge    = imsngphot.matching(outcat_name, convquerycat, sep = 3.)
+        merge    = iph.matching(outcat_name, convquerycat, sep = 3.)
         merge.rename_column('MAG_APER', 'MAG_APER_0')
         merge.rename_column('MAGERR_APER', 'MAGERR_APER_0')
         merge.rename_column('FLUX_APER', 'FLUX_APER_0')

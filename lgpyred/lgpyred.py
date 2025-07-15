@@ -1230,12 +1230,9 @@ class Red :
             hdr     = fits.getheader(inim)
             obj     = hdr['OBJECT']
 
-            #ccd     = self.ccd
             band    = hdr['FILTER']
             program = hdr.get('PROGRAM', '')
-            #part    = inim[:-5]
-            # others  = glob.glob(part+'*')
-            #"""
+
             if program == 'IMSNG':
                 print(f'Move {inim} to {imsng_archive}')
                 archive_path = os.path.join(imsng_archive, obj, self.ccd, band)
@@ -1252,18 +1249,14 @@ class Red :
                     archive_path = os.path.join(self.archive_paths['PNUO'], obj, self.ccd, band)
                 else:
                     raise ValueError(f"No archive path defined for CCD '{self.ccd}' and program '{program}'")
-            #"""
-
             os.makedirs(archive_path, exist_ok=True)
             dest_file_path = os.path.join(archive_path, os.path.basename(inim))
-            #os.system(f'/usr/bin/cp {inim} {dest_file_path}')
+
             shutil.copy2(inim, dest_file_path)
 
             os.system(f'chmod -R 777 {archive_path}')
         print('Finished.')
 
-    #'''
-#if __name__ == "__main__":
 def main(ccd='PNUO_C361K'):
     # Create an instance of the Red class
     
@@ -1275,7 +1268,6 @@ def main(ccd='PNUO_C361K'):
                 flatproc    = True,
                 flattype    = 'skyflat'
                 )
-    
 
     # Execute the methods in the desired sequence
     if os.path.exists(red.sumfile):

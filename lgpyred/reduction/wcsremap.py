@@ -62,7 +62,7 @@ def run_wcsremap_wrap(imlist_name, refim, large=True, wcsregister=True):
 	"""
 	import os
 	import glob
-	from lgpy.reduction.wcsremap_wrap import main as remap
+	from lgpyred.reduction.wcsremap_wrap import main as remap
 	imlist  = glob.glob(imlist_name); imlist.sort()
 	if large == False :
 		# pixscale of sciim is small than refim
@@ -95,8 +95,8 @@ def run_wcsremap_epoch(imlist_name, sep=5., wcsregister=True):
 	large = False : Sci pix is smaller or when you make stacking image of one epoch.
 	"""
 	import os, glob
-	from lgpy.SameEpoch import SameEpoch
-	from lgpy.reduction.wcsremap import run_wcsremap_wrap
+	from lgpyred.SameEpoch import SameEpoch
+	from lgpyred.reduction.wcsremap import run_wcsremap_wrap
 	res = SameEpoch(imlist_name, sep=sep)
 	for i in range(len(res)):
 		imlist = list(res[i])

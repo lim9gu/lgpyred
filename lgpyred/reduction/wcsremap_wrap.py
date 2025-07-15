@@ -1,11 +1,11 @@
-# run /home/lim9/anaconda3/lib/python3.7/site-packages/lgpy/wcsremap_wrap.py
+# run /home/lim9/anaconda3/lib/python3.7/site-packages/lgpyred/wcsremap_wrap.py
 #Author: J Elliott
 # Date: 07.11.2011
 #-------------------
 
 # imports
 import sys, getopt
-from lgpy.image import imFits
+from lgpyred.image import imFits
 
 # Usage
 

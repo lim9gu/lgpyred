@@ -1259,6 +1259,7 @@ class Red :
 
 def main(ccd='PNUO_C361K'):
     import os
+    from astropy.io import ascii
     # Create an instance of the Red class
     
     red = Red(imlist_name = '*.fit',

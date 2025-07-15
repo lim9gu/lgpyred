@@ -45,7 +45,7 @@ The pipeline also depends on several standalone external tools that are not incl
 - `Astrometry.net` (Lang et al. 2010)
 - `wcsremap` (by Andrew Becker)
 - `hotpants` (by Andrew Becker)
-- 'SExtractor 2.25' (Bertin & Arnouts 1996)
+- `SExtractor 2.25` (Bertin & Arnouts 1996)
 
 Please refer to the docs/ folder for detailed step-by-step installation guides for each tool. Note that you can install SExtractor 2.25 using 
 

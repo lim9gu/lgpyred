@@ -1258,6 +1258,7 @@ class Red :
         print('Finished.')
 
 def main(ccd='PNUO_C361K'):
+    import os
     # Create an instance of the Red class
     
     red = Red(imlist_name = '*.fit',

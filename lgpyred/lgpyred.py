@@ -109,7 +109,7 @@ class Red :
         self.curdir      = os.getcwd()
 
         iraf.chdir(self.curdir)
-        self.irafdb = str(files(lgpyred.data).joinpath("ccddb"))
+        self.irafdb = str(files(lgpyred.data).joinpath("ccddb"))+'/'
         self.imlist_name = imlist_name
         if '-' in list(self.curdir.split('/')[-1]) :
             yy   = self.curdir.split('/')[-1].split('-')[0]

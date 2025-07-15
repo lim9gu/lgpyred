@@ -123,6 +123,7 @@ lgpyred --archive --imlist '*.fit'
 
 ### 4.2 Example usage (Python Module; RECOMMENDED)
 You can also use lgpyred directly in Python code instead of the command line.
+Run python code in the directory of observed data to processing (e.g. 20250623).
 For example, in an interactive Python session or a script:
 
 ```python

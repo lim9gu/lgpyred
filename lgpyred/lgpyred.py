@@ -1,4 +1,4 @@
-### LGPY image REDuction pipeline
+### lgpyred image REDuction pipeline
 
 import time
 import shutil
@@ -21,13 +21,13 @@ from astropy.coordinates import SkyCoord
 from importlib.resources import files
 import importlib.resources as pkg_resources
 
-import lgpy.data
-from lgpy.SameEpoch import SameEpoch
-from lgpy.imcombine import imcombine_set, imcombine_epoch
-from lgpy.reduction.hdrcheck import wcscenter
-from lgpy.reduction.wcsremap import run_wcsremap_epoch, run_wcsremap_wrap
-from lgpy.lgphot import phot
-from lgpy.reduction import hotpants
+import lgpyred.data
+from lgpyred.SameEpoch import SameEpoch
+from lgpyred.imcombine import imcombine_set, imcombine_epoch
+from lgpyred.reduction.hdrcheck import wcscenter
+from lgpyred.reduction.wcsremap import run_wcsremap_epoch, run_wcsremap_wrap
+from lgpyred.lgphot import phot
+from lgpyred.reduction import hotpants
 
 class Red :
     """
@@ -43,7 +43,7 @@ class Red :
     Note:
     - IRAF must be installed and accessible.
     - Astrometry.net and HOTPANTS must be available in the system PATH.
-    - Configuration and reference files (obs_spec.txt, alltarget.dat, sex config) are loaded from lgpy package.
+    - Configuration and reference files (obs_spec.txt, alltarget.dat, sex config) are loaded from lgpyred package.
     """
     def __init__(self,
                  imlist_name = '*.fit',
@@ -95,7 +95,7 @@ class Red :
         -----
         - Instrument parameters are loaded from the packaged `obs_spec.txt` and `ccddb/`.
         - All necessary configuration and support files (e.g., alltarget.dat, sextractor config) are 
-          accessed via the `lgpy.data`, `lgpy.astrom_config`, and `lgpy.photconf` modules.
+          accessed via the `lgpyred.data`, `lgpyred.astrom_config`, and `lgpyred.photconf` modules.
         - If the `ASTROMETRY_CFG` environment variable is set, it overrides the default astrometry config path.
         - If the HOTPANTS template directory does not exist, subtraction will be skipped.
         - Archiving is automatically handled based on the `PROGRAM` header, CCD name, and filter band.
@@ -109,7 +109,7 @@ class Red :
         self.curdir      = os.getcwd()
 
         iraf.chdir(self.curdir)
-        self.irafdb = str(files(lgpy.data).joinpath("ccddb"))
+        self.irafdb = str(files(lgpyred.data).joinpath("ccddb"))
         self.imlist_name = imlist_name
         if '-' in list(self.curdir.split('/')[-1]) :
             yy   = self.curdir.split('/')[-1].split('-')[0]
@@ -122,7 +122,7 @@ class Red :
         # Detector setting
         self.ccd         = ccd
         #obscat           = ascii.read("/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt")
-        obscat           = ascii.read(str(files(lgpy.data).joinpath('obs_spec.txt')))
+        obscat           = ascii.read(str(files(lgpyred.data).joinpath('obs_spec.txt')))
         inst             = obscat[obscat['obs_ccd'] == self.ccd]
 
         self.temp2replace = -5. # If no CCD-TEMP, replace this temp.
@@ -161,13 +161,13 @@ class Red :
         self.radec     = False # if True, astronometry.net search for wcs using radec in fits image header 
         #self.sexconfig = f'/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.{self.ccd}.sex'
 
-        self.sexconfig = str(files('lgpy.astrom_config').joinpath(f'astrometry.net.{self.ccd}.sex'))
+        self.sexconfig = str(files('lgpyred.astrom_config').joinpath(f'astrometry.net.{self.ccd}.sex'))
 
         self.radius    = 0.7 # degree of querying radius of stars in index files
 
         # Header check
         #self.alltarget = "/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/alltarget.dat"
-        self.alltarget = str(files('lgpy.data').joinpath('alltarget.dat'))
+        self.alltarget = str(files('lgpyred.data').joinpath('alltarget.dat'))
 
         # Image alignment setting (wcsremap)
         self.sep         = sep   # mins time interval
@@ -177,7 +177,7 @@ class Red :
         self.reject = 'none' 
 
         # Photometry
-        self.photpath = str(files('lgpy.photconf'))
+        self.photpath = str(files('lgpyred.photconf'))
 
         # Image subtraction setting (HOTPANTS)
             # If you want to perform image subtraction, you need to prepare template images beforehand.
@@ -211,7 +211,7 @@ class Red :
         that the LGPYRED pipeline is ready, along with the selected CCD and release version.
 
         The banner includes:
-        - The name of the pipeline ("LGPY imaging REDuction")
+        - The name of the pipeline ("lgpyred imaging REDuction")
         - The current version
         - The CCD identifier (e.g., 'PNUO_C361K')
 
@@ -226,7 +226,7 @@ class Red :
         ╚══════╝ ╚═════╝ ╚═╝        ╚═╝   ╚═╝  ╚═╝╚══════╝╚═════╝ 
         """)
         print(rf"""
-        LGPY imaging REDuction pipeline for {self.ccd} 
+        lgpyred imaging REDuction pipeline for {self.ccd} 
         Release version: v1.0.0 (2025-07-07) 
         Author: G. Lim (lim9gu@gmail.com)
         """)

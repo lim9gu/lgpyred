@@ -1,5 +1,5 @@
-recursive-include lgpyred/lgpytars/data *.*
-recursive-include lgpyred/lgpytars/astrom_config *.*
-recursive-include lgpyred/lgpytars/photconf *.*
-recursive-include lgpyred/lgpytars/sex_config *.*
-recursive-include lgpyred/lgpytars/reduction *.*
+recursive-include lgpyred/data *.*
+recursive-include lgpyred/astrom_config *.*
+recursive-include lgpyred/photconf *.*
+recursive-include lgpyred/sex_config *.*
+recursive-include lgpyred/reduction *.*

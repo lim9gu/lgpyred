@@ -5,7 +5,7 @@
 
 # imports
 import sys, getopt
-from lgpytars.image import imFits
+from lgpy.image import imFits
 
 # Usage
 

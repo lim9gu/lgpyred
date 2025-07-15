@@ -17,9 +17,9 @@ from astropy.visualization import (MinMaxInterval, SqrtStretch, ImageNormalize)
 from astropy.visualization import ZScaleInterval, LinearStretch
 
 import importlib.resources as pkg_resources
-import lgpytars.imsng.imsngphot as iph 
-from lgpytars.reduction.hdrcheck import wcscenter
-import lgpytars.data
+import lgpy.imsng.imsngphot as iph 
+from lgpy.reduction.hdrcheck import wcscenter
+import lgpy.data
 
 from matplotlib import rc
 import matplotlib.pyplot as plt
@@ -131,7 +131,7 @@ def PlotPhotRes(inim, band, ref, mykey, myerrkey, totals, alives, exiles, ZP, zp
     os.system(f'mv {outname} ./fig/')
     plt.close()
 
-def SE(inim, outcat_name, pixscale, path='./lgpytars/photconf/', gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
+def SE(inim, outcat_name, pixscale, path='./lgpy/photconf/', gain=1, FWHM=1.2, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize=5, backphoto_type='LOCAL', backphoto_thick=24, aperture=None):
     sexconf   = path+'default.sex'
     sexnnw    = path+'default.nnw'
     sexconv   = path+'default.conv'
@@ -223,7 +223,7 @@ def process_catalog(ref, obj, ra, dec, fov, ratio):
     return convquerycat
 
 
-def phot(imlist_name, target_catalog='', band='V', path='./lgpytars/photconf/', savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=0.9, onlyzp=True, snrcut=0.1, magup=11, maglow=15):
+def phot(imlist_name, target_catalog='', band='V', path='./lgpy/photconf/', savecat=True, subprefix='hdCalib', ref='PS1', mykey='APER_1', sub=False, minarea=5, det_thresh=5, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=0.9, onlyzp=True, snrcut=0.1, magup=11, maglow=15):
     """
     MAG_AUTO   : AUTO 
     MAG_APER_0 : 1*FWHM
@@ -242,7 +242,7 @@ def phot(imlist_name, target_catalog='', band='V', path='./lgpytars/photconf/', 
     start_time = time.time()
     myerrkey   = 'MAGERR_'+mykey
     
-    with pkg_resources.path(lgpytars.data, 'obs_spec.txt') as path:
+    with pkg_resources.path(lgpy.data, 'obs_spec.txt') as path:
         obscat = ascii.read( str(path))
 
     if savecat :
@@ -588,7 +588,7 @@ def phot(imlist_name, target_catalog='', band='V', path='./lgpytars/photconf/', 
         return targetcat
 
 
-def subphot(imlist_name='Cal*com.fits', target_catalog='SN2025dr.cat', band='i', path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/photconf/', mykey='APER_1', subprefix='hdCalib', minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01,  backsize=128, backfiltersize=5,  backphoto_type='LOCAL', savecat=True):
+def subphot(imlist_name='Cal*com.fits', target_catalog='SN2025dr.cat', band='i', path='/home/lim9/miniconda3/lib/python3.9/site-packages/lgpy/photconf/', mykey='APER_1', subprefix='hdCalib', minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01,  backsize=128, backfiltersize=5,  backphoto_type='LOCAL', savecat=True):
     """
     ZP가 헤더에 존재하는 이미지에서 특정 구경(APER_1)으로 측광을 수행하는 함수
 

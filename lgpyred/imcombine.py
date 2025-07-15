@@ -6,7 +6,7 @@ import numpy as np
 from pyraf import iraf
 from astropy.io import fits
 from astropy.time import Time
-from lgpytars.SameEpoch import SameEpoch
+from lgpy.SameEpoch import SameEpoch
 
 def imcombine_set(imlist_name, combine='median', reject='sigclip'):
     """
@@ -193,7 +193,7 @@ def imcombine_group(imlist_name, N=5, reject='sigclip'):
 	import os, sys
 	import numpy as np 
 	from pyraf import iraf
-	from lgpytars.SameEpoch import ImageGroup
+	from lgpy.SameEpoch import ImageGroup
 	from astropy.io import fits
 	from astropy.time import Time
 	from astropy.table import Table

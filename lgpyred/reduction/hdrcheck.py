@@ -1,6 +1,6 @@
 from astropy.io import ascii
 import importlib.resources as pkg_resources
-import lgpytars.data  
+import lgpy.data  
 
 def wcscenter(inim) :
 	"""
@@ -32,7 +32,7 @@ def hdrcheck(imlist_name, ccd, fov, racen='', deccen=''):
 	from astropy.time import Time	
 	from astropy.coordinates import SkyCoord
 
-	with pkg_resources.path(lgpytars.data, 'alltarget.dat') as path:
+	with pkg_resources.path(lgpy.data, 'alltarget.dat') as path:
 		all_catname = str(path)
 		allcat = ascii.read(all_catname)
 

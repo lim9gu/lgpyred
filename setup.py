@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='lgpyred',
-    version='0.1',
+    version='0.2',
     description='LGPY REDuction pipeline',
     author='Gu Lim',
     packages=find_packages(),

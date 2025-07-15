@@ -46,6 +46,7 @@ The pipeline also depends on several standalone external tools that are not incl
 - `wcsremap` (by Andrew Becker)
 - `hotpants` (by Andrew Becker)
 - `SExtractor 2.25` (Bertin & Arnouts 1996)
+- `WCSTools 3.8.7` (Jessica Mink)
 
 Please refer to the docs/ folder for detailed step-by-step installation guides for each tool. Note that you can install SExtractor 2.25 using 
 
@@ -120,7 +121,7 @@ lgpyred --subtract --imlist '*.fit' --template_dir /your_hotpants_template_path/
 lgpyred --archive --imlist '*.fit'
 ```
 
-### 4.2 Example usage (Python Module)
+### 4.2 Example usage (Python Module; RECOMMENDED)
 You can also use lgpyred directly in Python code instead of the command line.
 For example, in an interactive Python session or a script:
 
@@ -161,7 +162,7 @@ main()
 
 ### 5. Supported Platforms
 This pipeline has been tested on Ubuntu Linux 24 LTS.
-Support for macOS or Windows may require additional adjustments, especially for installing external tools like IRAF or Hotpants.
+Support for macOS may require additional adjustments, especially for installing external tools like IRAF or Hotpants. Linux system is recommended since other software run in Linux system.  
 
 License
 Distributed under the MIT License. See LICENSE file for details.

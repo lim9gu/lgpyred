@@ -121,7 +121,6 @@ class Red :
 
         # Detector setting
         self.ccd         = ccd
-        #obscat           = ascii.read("/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/obs_spec.txt")
         obscat           = ascii.read(str(files(lgpyred.data).joinpath('obs_spec.txt')))
         inst             = obscat[obscat['obs_ccd'] == self.ccd]
 
@@ -153,20 +152,17 @@ class Red :
         self.flat_archive   = f'{self.savedir}masterflat_*/'
 
         # Astrometry setting (Astrometry.net)
-        #self.config    = '/home/lim9/miniconda3/etc/astrometry.cfg'
         self.config    = os.environ.get('ASTROMETRY_CFG', '/etc/astrometry.cfg')
 
         self.scalelow  = self.pixscale * 0.9 #0.18  # lower limit for the pixel scale covering 'No binning' to '2x2 binning')
         self.scalehigh = self.pixscale * 2 * 1.1 #0.46  # upper limit for the pixel scale covering 'No binning' to '2x2 binning')
         self.radec     = False # if True, astronometry.net search for wcs using radec in fits image header 
-        #self.sexconfig = f'/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/astrom.config/astrometry.net.{self.ccd}.sex'
 
         self.sexconfig = str(files('lgpyred.astrom_config'))
 
         self.radius    = 0.7 # degree of querying radius of stars in index files
 
         # Header check
-        #self.alltarget = "/home/lim9/miniconda3/lib/python3.9/site-packages/lgpytars/data/alltarget.dat"
         self.alltarget = str(files('lgpyred.data').joinpath('alltarget.dat'))
 
         # Image alignment setting (wcsremap)
@@ -316,7 +312,6 @@ class Red :
         -------
         None
         """
-        #imlist = glob.glob(self.imlist_name); imlist.sort()
         if self.imlist_name == None:
             imlist = self.imlist
         elif self.imlist_name != None:
@@ -408,7 +403,6 @@ class Red :
                 closest_bias = self.GetMaster('bias', bin=binning)
                 if closest_bias:
                     print(f"Using closest bias: {closest_bias}")
-                    #os.system(f'cp {closest_bias} ./')
                     shutil.copy2(closest_bias, './')
 
                 else:
@@ -422,7 +416,6 @@ class Red :
                 closest_dark = self.GetMaster('dark', bin=binning, exp=exptime, temp=ccdtemp)
                 if closest_dark:
                     print(f"Using closest dark: {closest_dark}")
-                    #os.system(f'cp {closest_dark} ./')
                     shutil.copy2(closest_dark, './')
                 else:
                     print("No dark available.")
@@ -435,7 +428,6 @@ class Red :
                 closest_flat = self.GetMaster('flat', bin=binning, filter_name=band)
                 if closest_flat:
                     print(f"Using closest flat: {closest_flat}")
-                    #os.system(f'cp {closest_flat} ./')
                     shutil.copy2(closest_flat, './')
                 else:
                     print("No flat available.")
@@ -497,9 +489,7 @@ class Red :
                 os.mkdir(f'{savedir}masterbias')
             shutil.copyfile(f'{self.curdir}/{output_name}', f'{savedir}masterbias/{output_name}')
         os.system('/usr/bin/rm bias*.list')
-
         iraf.dir('.')
-        #self.masterbias = output_name
 
     def GenDark(self) :
         """
@@ -546,7 +536,6 @@ class Red :
             print('zero subtraction...')
             zdarkset = []
             for d in darkset:
-                #iraf.imarith(operand1=d, op='-', operand2=f"{self.curdir}/{mblist[-1].split('/')[-1]}", result='z' + d)
                 zoutput = 'z' + d
                 iraf.imarith(operand1=d, op='-', operand2=bias_file, result=zoutput)
                 zdarkset.append('z' + d)
@@ -627,11 +616,9 @@ class Red :
 
             if self.flat_zeroproc :
                 print('Zero subtraction...')
-                #iraf.imarith(operand1=im, op='-', operand2=f"{self.curdir}/{mblist[-1].split('/')[-1]}", result='z'+im)
                 iraf.imarith(operand1=im, op='-', operand2=bias_file, result='z' + im)
             else :
                 print('Zero subtraction is skipped...')
-                #os.system(f'cp {im} z{im}')
                 shutil.copy2(im, f'z{im}')
 
             if self.flat_darkproc :
@@ -641,7 +628,6 @@ class Red :
 
             else :
                 print('Dark subtraction is skipped...')
-                #os.system(f'cp z{im} dz{im}')
                 shutil.copy2(f'z{im}', f'dz{im}')
 
         ### Flat combine
@@ -663,7 +649,6 @@ class Red :
                         # Flat combine
                         print(f'input : {input_name}')
                         output_name = f'{input_name[:-5]}_bin{bin}.fits'
-                        #masterflat.append(output_name)
 
                         print(f'output : {output_name}')
                         iraf.imstat(images='@'+input_name,fields='image,mean,midpt,mode,stddev,min,max', lsigma=3, usigma=3)
@@ -671,7 +656,6 @@ class Red :
 
                         print(f'{output_name} is created. Normalizing...')
                         data, newhdr = fits.getdata(output_name, header=True)
-                        #x           = np.mean(data)
                         x            = np.median(data)
                         nimage       = data/x
                         newflat_name = f'{curdate}_n{band}{self.flattype}_bin{bin}.fits'
@@ -741,7 +725,6 @@ class Red :
                 iraf.imarith(operand1=inim, op='-', operand2=bias_file, result='z' + inim)
             else:
                 print("Zero subtraction is skipped...")
-                #os.system(f'cp {inim} z{inim}')
                 shutil.copy2(inim, f'z{inim}')
 
             # Dark subtraction
@@ -751,7 +734,6 @@ class Red :
                 iraf.imarith(operand1=zinput, op='-', operand2=dark_file, result='dz' + inim)
             else:
                 print("Dark subtraction is skipped...")
-                #os.system(f'cp z{inim} dz{inim}')
                 shutil.copy2(f'z{inim}', f'dz{inim}')
 
             # Flat fielding
@@ -761,7 +743,6 @@ class Red :
                 iraf.imarith(operand1=dzinput, op='/', operand2=flat_file, result='f' + dzinput)
             else:
                 print("Flat fielding is skipped...")
-                #os.system(f'cp dz{inim} fdz{inim}')
                 shutil.copy2(f'dz{inim}', f'fdz{inim}')
 
             fdz_images.append(f'fdz{inim}')
@@ -812,7 +793,6 @@ class Red :
         print('Solving WCS using Astrometry.net...')
         for n, inim in enumerate(imlist) :
             if self.radec == False:
-                #com = f'solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor  --source-extractor-config {sexconfig} --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n'
                 com = f"solve-field {inim} --resort --cpulimit 300 --skip-solved --config {self.config} --use-source-extractor --source-extractor-path 'source-extractor -c {self.sexconfig} -PARAMETERS_NAME {sexparam} -FILTER_NAME {sexconv} -STARNNW_NAME {sexnnw}' --x-column X_IMAGE --y-column Y_IMAGE --sort-column MAG_AUTO --sort-ascending --scale-unit arcsecperpix --scale-low {scalelow} --scale-high {scalehigh} --radius {radius} --no-remove-lines --uniformize 0 --no-plots  --new-fits a{inim} --overwrite --temp-dir .\n"
             else:
                 hdr     = fits.getheader(inim)
@@ -919,7 +899,6 @@ class Red :
         if imlist_name == None:
             imlist = self.solved_images
             self.summary['CALNAME'] = self.summary['FILENAME'].copy()
-            #self.summary['CALNAME'] = self.summary['CALNAME'].astype('str60') 
             newcol = Column(data=self.summary['FILENAME'], name='CALNAME', dtype=f'S60')
             self.summary.replace_column('CALNAME', newcol)
             for inim in imlist :
@@ -932,14 +911,13 @@ class Red :
                 FILTER  = hdr['FILTER']
 
                 newimage = f'Calib-{self.ccd}-{OBJECT}-{str(UTDATE[0:4])}{str(UTDATE[5:7])}{str(UTDATE[8:10])}-{str(UTSTART[0:2])}{str(UTSTART[3:5])}{str(UTSTART[6:8])}-{FILTER}-{str(EXPTIME)}.fits'
-                #'''
+                
                 if self.summary['IMAGETYP'][idx].item() == 'Light Frame' :
                     self.summary['CALNAME'][idx] = newimage
                 else:
                     self.summary['CALNAME'][idx] = inim
-                #'''
+                
                 print(f'Copy {inim} to {newimage}...')
-                #os.system(f'/usr/bin/cp {inim} {newimage}')
                 shutil.copy2(inim, newimage)
             print(f"Basic preprocessing of {self.ccd} is finished.")
 
@@ -949,7 +927,6 @@ class Red :
         elif imlist_name != None:
             imlist   = glob.glob(imlist_name)
             for inim in imlist :
-                #idx     = np.where(self.summary['FILENAME'] == inim[4:])[0]
                 hdr     = fits.getheader(inim)
                 EXPTIME = int(hdr['exptime'])
                 UTDATE  = hdr['date-obs'][0:10]
@@ -960,7 +937,6 @@ class Red :
                 newimage = f'Calib-{self.ccd}-{OBJECT}-{str(UTDATE[0:4])}{str(UTDATE[5:7])}{str(UTDATE[8:10])}-{str(UTSTART[0:2])}{str(UTSTART[3:5])}{str(UTSTART[6:8])}-{FILTER}-{str(EXPTIME)}.fits'
 
                 print(f'Copy {inim} to {newimage}...')
-                #os.system(f'/usr/bin/cp {inim} {newimage}')
                 shutil.copy2(inim, newimage)
             print(f"Basic preprocessing of {self.ccd} is finished.")  
         self.reduced_images = glob.glob('Cal*.fits') ; self.reduced_images.sort()
@@ -1039,8 +1015,6 @@ class Red :
            
 
         elif imlist_name != None:
-            #imlist   = glob.glob(imlist_name); imlist.sort()
-
             objset  = list(set(iraf.hselect(imlist_name, fields="$OBJECT", expr=f'IMAGETYP = "Light Frame"', Stdout = 1))) ; objset.sort()
             bandset = list(set(iraf.hselect(imlist_name, fields="$FILTER", expr=f'IMAGETYP = "Light Frame"', Stdout = 1))) ; bandset.sort()
             binset  = list(set(iraf.hselect(imlist_name, fields="$XBINNING", expr=f'IMAGETYP = "Light Frame"', Stdout = 1))) ; binset.sort()
@@ -1117,12 +1091,7 @@ class Red :
                             phot(inim, target_catalog='', band=band, path=self.photpath, savecat=True, subprefix='hdCalib', ref='APASS', mykey='APER_1', sub=False, minarea=3, det_thresh=3, deb_nthresh=32, deb_mincont=0.01, backsize=128, backfiltersize = 5, backphoto_type='LOCAL', ratio=1, onlyzp=True, snrcut=0.1, magup=11, maglow=15)
                         except:
                             print('No stars matched with APASS or PS1. PLEASE DO MANUALLY.')
-                        
-                            #os.system(f'mv {inim} ./photretry/')
-                            #os.system(f'mv {inim[:-5]}.chaper.fits ./photretry/')
-                            #os.system(f'mv {inim[:-5]}.chbkg.fits ./photretry/')
-                            #os.system(f'mv {inim[:-5]}.chseg.fits ./photretry/')
-                            #os.system(f'mv {inim[:-5]}.merge.cat ./photretry/')
+
                             # Ensure the target directory exists
                             os.makedirs('./photretry/', exist_ok=True)
 

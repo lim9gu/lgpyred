@@ -45,8 +45,13 @@ The pipeline also depends on several standalone external tools that are not incl
 - `Astrometry.net` (Lang et al. 2010)
 - `wcsremap` (by Andrew Becker)
 - `hotpants` (by Andrew Becker)
+- 'SExtractor 2.25' (Bertin & Arnouts 1996)
 
-Please refer to the docs/ folder for detailed step-by-step installation guides for each tool.
+Please refer to the docs/ folder for detailed step-by-step installation guides for each tool. Note that you can install SExtractor 2.25 using 
+
+```bash
+conda install conda-forge/label/cf202003::astromatic-source-extractor
+```
 
 ### 3. Installation
 
@@ -120,7 +125,7 @@ You can also use lgpyred directly in Python code instead of the command line.
 For example, in an interactive Python session or a script:
 
 ```python
-from lgpyred import Red, main
+from lgpyred.lgpyred import Red, main
 ```
 
 #### Create a Red instance (change parameters as needed)

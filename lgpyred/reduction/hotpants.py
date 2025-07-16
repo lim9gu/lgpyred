@@ -154,7 +154,7 @@ def hotpants(sciim, refim, ngflag=False, sigma_match='', conv='t', scale='i', iu
 def runhotpants(imlist_name='Cal*fits', refinst='PS1', scifwhmkey='FWHM', reffwhmkey='FWHM', refim='', same=True, part0='Remap', **kwargs):
     imlist = glob.glob(imlist_name); imlist.sort()
 
-    obsspec = ascii.read('/home/lim9/miniconda3/lib/python3.9/site-packages/lgpyred/data/obs_spec.txt')
+    #obsspec = ascii.read('/home/lim9/miniconda3/lib/python3.9/site-packages/lgpyred/data/obs_spec.txt')
     with pkg_resources.path(lgpyred.data, 'obs_spec.txt') as path:
         obsspec = ascii.read( str(path))    
     
